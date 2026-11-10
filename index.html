@@ -31,10 +31,13 @@
     .empty{margin:auto;text-align:center;color:var(--mut);padding:20px}
     .list{width:100%;max-width:520px;overflow-y:auto;flex:1}
     .list h3{margin:16px 0 6px}
-    .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:6px;margin-bottom:6px}
+    .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px;margin-bottom:8px}
     .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884}
-    .row b{display:block}.row small{color:var(--mut)}
-    .row button{margin-left:auto;border:0;background:none;color:var(--ac);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+    .row b{display:block;font-size:14px}.row small{color:var(--mut)}
+    .row-actions{margin-left:auto;display:flex;flex-direction:column;gap:4px}
+    .row-actions button{border:0;background:none;font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px;text-align:right}
+    .row-actions button.btn-seen{color:var(--ac)}
+    .row-actions button.btn-ignore{color:#ef4444}
     .b{border:0;border-radius:10px;background:var(--ac);color:#fff;padding:10px 14px;font-weight:600;margin:2px 4px 2px 0;cursor:pointer}
     input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #8885;background:var(--card);color:var(--fg);margin-bottom:6px}
   </style>
@@ -130,7 +133,7 @@ function d1() {
 }
 
 const lst = v => Object.values(S.m).filter(x => S.like[x.id] === v);
-const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt=""><div><b>${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div>${ex}</div>`;
+const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt=""><div><b>${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div><div class="row-actions">${ex}</div></div>`;
 
 // 2. RECOMENDACIONES (PARA TI)
 async function d2() {
@@ -145,19 +148,20 @@ async function d2() {
     RC = Object.keys(sc).filter(i => sc[i].s > 0).sort((a, b) => sc[b].s - sc[a].s).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · similar a ${sc[i].c} de tus favoritas` })); RK = key;
   }
   if (tab != 2) return;
-  el.innerHTML = RC.map(x => row(x, `<button data-a="seen" data-id="${x.id}">Ya la vi</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora. Califica más películas vistas.</p>';
+  el.innerHTML = RC.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button><button class="btn-ignore" data-a="ignore" data-id="${x.id}">No me interesa</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora. Califica más películas vistas.</p>';
 }
 
 // 3. GUSTOS / RESULTADOS
 async function d3() {
   const L = lst(true), N = lst(false);
-  m.innerHTML = `<div class="list"><h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}<h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}</div>`;
+  m.innerHTML = `<div class="list"><h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}<h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}</div>`;
 }
 
 m.onclick = e => {
   const b = e.target.closest("[data-a]"); if (!b) return; const id = +b.dataset.id;
   if (b.dataset.a == "undo") { delete S.like[id]; save(); draw() }
   if (b.dataset.a == "seen") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; RC = RC.filter(x => x.id != id); save(); draw() }
+  if (b.dataset.a == "ignore") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; S.like[id] = false; RC = RC.filter(x => x.id != id); save(); draw() }
 };
 
 // --- IMPORTAR / EXPORTAR DATOS (CSV) ---
