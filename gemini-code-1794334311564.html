@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PeliSwipe</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎬%3C/text%3E%3C/svg%3E">
+  <style>
+    :root{--bg:#f4f4f7;--fg:#1a1a22;--card:#fff;--mut:#6b6b7a;--ac:#6d28d9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+    @media(prefers-color-scheme:dark){:root{--bg:#101015;--fg:#f1f1f6;--card:#1c1c25;--mut:#9a9aab}}
+    *{box-sizing:border-box}html,body{margin:0;height:100%}
+    body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
+    nav{display:flex;gap:4px;padding:8px 4px;justify-content:center;overflow-x:auto}
+    nav button{flex:1;max-width:110px;border:0;border-radius:20px;padding:8px 2px;background:var(--card);color:var(--fg);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap}
+    nav button.on{background:var(--ac);color:#fff}
+    main{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0;padding:0 14px 10px}
+    .hint{color:var(--mut);font-size:14px;margin:4px 0 8px;text-align:center}
+    #deck{position:relative;flex:1;width:100%;max-width:380px;min-height:0}
+    .card{position:absolute;inset:0;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;box-shadow:0 8px 24px #0004;touch-action:none;user-select:none;background:#333 center/cover;cursor:grab}
+    .card:active{cursor:grabbing}
+    a{color:inherit}.credits{text-align:center;margin-top:18px}.credits svg{height:auto}
+    kbd{background:var(--card);border:1px solid #8885;border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit}
+    .btns button.sm{width:46px;height:46px;font-size:20px;align-self:center}
+    .card.back{transform:scale(.95) translateY(10px);opacity:.7}
+    .info{padding:60px 20px 20px;background:linear-gradient(transparent,#000d)}
+    .info h2{margin:0;font-size:24px}.info p{margin:4px 0 0;opacity:.85}
+    .tag{position:absolute;top:24px;padding:4px 12px;border:4px solid;border-radius:10px;font-size:26px;font-weight:800;opacity:0;background:#0006}
+    .tag.r{right:20px;color:#4ade80;border-color:#4ade80;transform:rotate(12deg)}.tag.l{left:20px;color:#f87171;border-color:#f87171;transform:rotate(-12deg)}
+    .btns{display:flex;gap:28px;padding:12px 0 4px}
+    .btns button{width:68px;height:68px;border-radius:50%;border:0;font-size:30px;background:var(--card);box-shadow:0 3px 10px #0003;cursor:pointer}
+    .empty{margin:auto;text-align:center;color:var(--mut);padding:20px}
+    .list{width:100%;max-width:520px;overflow-y:auto;flex:1}
+    .list h3{margin:16px 0 6px}
+    .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:6px;margin-bottom:6px}
+    .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884}
+    .row b{display:block}.row small{color:var(--mut)}
+    .row button{margin-left:auto;border:0;background:none;color:var(--ac);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+    .b{border:0;border-radius:10px;background:var(--ac);color:#fff;padding:10px 14px;font-weight:600;margin:2px 4px 2px 0;cursor:pointer}
+    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #8885;background:var(--card);color:var(--fg);margin-bottom:6px}
+  </style>
+</head>
+<body>
+<nav>
+  <button id="t0">🎬 Descubrir</button>
+  <button id="t1">👀 Vistas</button>
+  <button id="t2">🎯 Para ti</button>
+  <button id="t3">⭐ Gustos</button>
+  <button id="t4">⚙️ Ajustes</button>
+</nav>
+<main id="m"></main>
+
+<script>
+const TMDB_KEY = "a03437a40a9ecc20a282981d75fd07b1"; 
+const IMG = "https://image.tmdb.org/t/p/w500", IMG2 = "https://image.tmdb.org/t/p/w185";
+let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0 }, tab = 0, Q = [], fp = null, RC = null, RK = "", H = [];
+
+try { Object.assign(S, JSON.parse(localStorage.getItem("peliswipe2")) || {}) } catch(e) {}
+const save = () => { try { localStorage.setItem("peliswipe2", JSON.stringify(S)) } catch(e) {} };
+const m = document.getElementById("m");
+
+async function api(path, params = {}) {
+  const u = new URL("https://api.themoviedb.org/3" + path);
+  u.searchParams.set("language", "es-ES");
+  for (const k in params) u.searchParams.set(k, params[k]);
+  const K = TMDB_KEY || S.key, h = {};
+  if (K.length > 40) h.Authorization = "Bearer " + K; else u.searchParams.set("api_key", K);
+  const r = await fetch(u, { headers: h });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+const n = x => ({ id: x.id, t: x.title, y: (x.release_date || "").slice(0, 4), p: x.poster_path, r: x.vote_average || 0 });
+
+async function more() {
+  const g = S.genre || 0; S.pg[g] = (S.pg[g] || 0) + 1; if (S.pg[g] > 500) return;
+  const d = await api("/discover/movie", { sort_by: "vote_count.desc", "vote_count.gte": 300, page: S.pg[g], ...(g ? { with_genres: g } : {}) });
+  d.results.map(n).filter(x => x.p && !(x.id in S.seen) && !Q.some(q => q.id == x.id)).forEach(x => Q.push(x));
+  save();
+}
+
+function fill() { return fp || (fp = (async () => { let t = 0; while (Q.length < 10 && t++ < 5) await more() })().finally(() => fp = null)) }
+const ans = (x, r) => { S.m[x.id] = { id: x.id, t: x.t, y: x.y, p: x.p }; S.seen[x.id] = !!r; save() };
+const err = e => { m.innerHTML = `<div class="empty">No pude cargar TMDB (${e.message}).<br>Revisa tu API key en ⚙️ Ajustes.</div>` };
+
+function cardHTML(x, top) {
+  return `<div class="card${top ? "" : " back"}" style="background-image:url(${IMG}${x.p})"><div class="tag r">${tab ? "ME GUSTÓ" : "VISTA"}</div><div class="tag l">${tab ? "NO ME GUSTÓ" : "NO VISTA"}</div><div class="info"><h2>${x.t}</h2><p>${x.y}</p></div></div>`;
+}
+
+function deck(list, onAns, txtL, txtR, empty) {
+  const pc = matchMedia("(hover:hover)").matches;
+  m.innerHTML = `<p class="hint">${pc ? `<kbd>A</kbd> / <kbd>←</kbd> ${txtL} · <kbd>D</kbd> / <kbd>→</kbd> ${txtR} · <kbd>Z</kbd> deshacer` : `Desliza → ${txtR} · ← ${txtL}`}</p><div id="deck"></div><div class="btns"><button id="bl" title="${txtL} (A)">✖️</button><button id="bu" class="sm" title="Deshacer (Z)">↩</button><button id="br" title="${txtR} (D)">💚</button></div>`;
+  const d = document.getElementById("deck");
+  if (!list.length) { m.innerHTML = `<div class="empty">${empty}</div>`; return }
+  d.innerHTML = (list[1] ? cardHTML(list[1], 0) : "") + cardHTML(list[0], 1);
+  const c = d.lastElementChild, tl = c.querySelector(".tag.l"), tr = c.querySelector(".tag.r");
+  let sx = null, dx = 0;
+  const set = v => { dx = v; c.style.transform = `translateX(${v}px) rotate(${v / 18}deg)`; tr.style.opacity = Math.max(0, v / 100); tl.style.opacity = Math.max(0, -v / 100) };
+  let done = false;
+  const go = r => { if (done) return; done = true; c.style.transition = "transform .3s"; c.style.transform = `translateX(${r ? 600 : -600}px) rotate(${r ? 30 : -30}deg)`; setTimeout(() => onAns(list[0], r), 250) };
+  c.onpointerdown = e => { sx = e.clientX; c.setPointerCapture(e.pointerId); c.style.transition = "none" };
+  c.onpointermove = e => { if (sx !== null) set(e.clientX - sx) };
+  c.onpointerup = c.onpointercancel = () => { if (sx === null) return; sx = null; if (dx > 100) go(1); else if (dx < -100) go(0); else { c.style.transition = "transform .2s"; set(0) } };
+  document.getElementById("bu").onclick = undo; document.getElementById("br").onclick = () => go(1); document.getElementById("bl").onclick = () => go(0);
+  window.key = e => { if (e.key == "ArrowRight") go(1); if (e.key == "ArrowLeft") go(0) };
+}
+
+const undo = () => { const h = H.pop(); if (!h) return; if (h.tab == 0) { delete S.seen[h.x.id]; delete S.m[h.x.id]; Q.unshift(h.x) } else delete S.like[h.x.id]; tab = h.tab; save(); draw() };
+
+document.addEventListener("keydown", e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k == "z" && tab < 2) { undo(); return }
+  if (window.key) window.key({ key: k == "a" ? "ArrowLeft" : k == "d" ? "ArrowRight" : e.key })
+});
+
+// 0. DESCUBRIR
+async function d0() {
+  Q = Q.filter(x => !(x.id in S.seen));
+  if (Q.length < 3) { m.innerHTML = '<div class="empty">Cargando películas…</div>'; try { await fill() } catch(e) { return err(e) } }
+  else if (Q.length < 10) fill().catch(() => {});
+  if (tab != 0) return;
+  Q.slice(0, 4).forEach(x => { new Image().src = IMG + x.p });
+  deck(Q.slice(0, 2), (x, r) => { Q.shift(); ans(x, r); H.push({ tab: 0, x }); draw() }, "no la he visto", "la vi", "No hay más películas con este filtro. Cambia el género en ⚙️ Ajustes.");
+}
+
+// 1. VISTAS
+function d1() {
+  const l = Object.values(S.m).filter(x => S.seen[x.id] && !(x.id in S.like));
+  deck(l.slice(0, 2), (x, r) => { S.like[x.id] = !!r; H.push({ tab: 1, x }); save(); draw() }, "no me gustó", "me gustó", "No tienes películas vistas por calificar. Ve a «Descubrir» 🎬");
+}
+
+const lst = v => Object.values(S.m).filter(x => S.like[x.id] === v);
+const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt=""><div><b>${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div>${ex}</div>`;
+
+// 2. RECOMENDACIONES (PARA TI)
+async function d2() {
+  const L = lst(true), N = lst(false), key = L.length + "/" + N.length;
+  m.innerHTML = `<div class="list"><h3>🎯 Recomendadas basadas en tus gustos</h3><div id="rc"><p class="hint">Calculando mejores recomendaciones...</p></div></div>`;
+  const el = document.getElementById("rc");
+  if (!L.length) { el.innerHTML = '<p class="hint">Califica películas vistas con 💚 en "Vistas" para recibir recomendaciones personalizadas.</p>'; return }
+  if (RK != key) {
+    const pick = (a, k) => [...a].sort(() => Math.random() - .5).slice(0, k), sc = {}, mt = {};
+    const run = (arr, w) => Promise.all(arr.map(async x => { try { const d = await api(`/movie/${x.id}/recommendations`); d.results.forEach(r => { if (!r.poster_path || S.seen[r.id] === true) return; mt[r.id] = n(r); const c = sc[r.id] || (sc[r.id] = { s: 0, c: 0 }); c.s += w * (1 + r.vote_average / 10); if (w > 0) c.c++ }) } catch(e) {} }));
+    await run(pick(L, 10), 1); await run(pick(N, 5), -1.5);
+    RC = Object.keys(sc).filter(i => sc[i].s > 0).sort((a, b) => sc[b].s - sc[a].s).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · similar a ${sc[i].c} de tus favoritas` })); RK = key;
+  }
+  if (tab != 2) return;
+  el.innerHTML = RC.map(x => row(x, `<button data-a="seen" data-id="${x.id}">Ya la vi</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora. Califica más películas vistas.</p>';
+}
+
+// 3. GUSTOS / RESULTADOS
+async function d3() {
+  const L = lst(true), N = lst(false);
+  m.innerHTML = `<div class="list"><h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}<h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}</div>`;
+}
+
+m.onclick = e => {
+  const b = e.target.closest("[data-a]"); if (!b) return; const id = +b.dataset.id;
+  if (b.dataset.a == "undo") { delete S.like[id]; save(); draw() }
+  if (b.dataset.a == "seen") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; RC = RC.filter(x => x.id != id); save(); draw() }
+};
+
+// --- IMPORTAR / EXPORTAR DATOS (CSV) ---
+const esc = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+
+function parse(t) {
+  const rows = []; let r = [], c = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch == '"') { if (t[i + 1] == '"') { c += '"'; i++ } else q = false } else c += ch }
+    else if (ch == '"') q = true;
+    else if (ch == ",") { r.push(c); c = "" }
+    else if (ch == "\n" || ch == "\r") { if (ch == "\r" && t[i + 1] == "\n") i++; r.push(c); c = ""; rows.push(r); r = [] }
+    else c += ch;
+  }
+  if (c || r.length) { r.push(c); rows.push(r) }
+  return rows;
+}
+
+function exportCSV() {
+  const rows = ["id,titulo,anio,poster,vista,gusto"];
+  for (const id in S.seen) { const x = S.m[id] || {}; rows.push([id, esc(x.t), x.y, x.p, S.seen[id] ? 1 : 0, id in S.like ? (S.like[id] ? 1 : 0) : ""].join(",")) }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv" })); a.download = "peliswipe-gustos.csv"; a.click();
+}
+
+function importCSV(txt) {
+  let k = 0;
+  parse(txt.replace(/^\ufeff/, "")).forEach((r, i) => {
+    const id = +r[0]; if (!id || i == 0 && r[0] == "id") return;
+    S.m[id] = { id, t: r[1], y: r[2], p: r[3] }; S.seen[id] = r[4] == "1"; if (r[5] === "1" || r[5] === "0") S.like[id] = r[5] == "1"; k++;
+  });
+  save(); RK = ""; Q = []; alert(k + " películas importadas."); draw();
+}
+
+// 4. AJUSTES
+async function d4() {
+  m.innerHTML = `<div class="list">
+    ${TMDB_KEY ? "" : `<h3>🔑 API key de TMDB</h3><p class="hint" style="text-align:left">Gratis en themoviedb.org → Ajustes → API.</p><input id="k" value="${S.key}" placeholder="Pega tu API key"><button class="b" id="sk">Guardar</button>`}
+    <h3>🎭 Género en Descubrir</h3>
+    <select id="g"><option value="0">Todos</option></select>
+    
+    <h3>💾 Tus gustos (CSV)</h3>
+    <button class="b" id="ex">Exportar CSV</button>
+    <button class="b" id="im">Importar CSV</button>
+    <input type="file" id="f" accept=".csv,text/csv" hidden>
+    
+    <h3>🗑️ Datos</h3>
+    <button class="b" id="rs" style="background:#ef4444">Reiniciar todo</button>
+    
+    <div class="credits">
+      <a href="https://www.themoviedb.org" target="_blank" rel="noopener">
+        <svg width="90" role="img" aria-label="TMDB" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190.24 81.52">
+          <defs>
+            <style>.tmdbc{fill:url(#tmdbg);}</style>
+            <linearGradient id="tmdbg" y1="40.76" x2="190.24" y2="40.76" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#90cea1"/>
+              <stop offset="0.56" stop-color="#3cbec9"/>
+              <stop offset="1" stop-color="#00b3e5"/>
+            </linearGradient>
+          </defs>
+          <g id="Layer_2" data-name="Layer 2">
+            <g id="Layer_1-2" data-name="Layer 1">
+              <path class="tmdbc" d="M105.67,36.06h66.9A17.67,17.67,0,0,0,190.24,18.4h0A17.67,17.67,0,0,0,172.57.73h-66.9A17.67,17.67,0,0,0,88,18.4h0A17.67,17.67,0,0,0,105.67,36.06Zm-88,45h76.9A17.67,17.67,0,0,0,112.24,63.4h0A17.67,17.67,0,0,0,94.57,45.73H17.67A17.67,17.67,0,0,0,0,63.4H0A17.67,17.67,0,0,0,17.67,81.06ZM10.41,35.42h7.8V6.92h10.1V0H.31v6.9h10.1Zm28.1,0h7.8V8.25h.1l9,27.15h6l9.3-27.15h.1V35.4h7.8V0H66.76l-8.2,23.1h-.1L50.31,0H38.51ZM152.43,55.67a15.07,15.07,0,0,0-4.52-5.52,18.57,18.57,0,0,0-6.68-3.08,33.54,33.54,0,0,0-8.07-1h-11.7v35.4h12.75a24.58,24.58,0,0,0,7.55-1.15A19.34,19.34,0,0,0,148.11,77a16.27,16.27,0,0,0,4.37-5.5,16.91,16.91,0,0,0,1.63-7.58A18.5,18.5,0,0,0,152.43,55.67ZM145,68.6A8.8,8.8,0,0,1,142.36,72a10.7,10.7,0,0,1-4,1.82,21.57,21.57,0,0,1-5,.55h-4.05v-21h4.6a17,17,0,0,1,4.67.63,11.66,11.66,0,0,1,3.88,1.87A9.14,9.14,0,0,1,145,59a9.87,9.87,0,0,1,1,4.52A11.89,11.89,0,0,1,145,68.6Zm44.63-.13a8,8,0,0,0-1.58-2.62A8.38,8.38,0,0,0,185.63,64a10.31,10.31,0,0,0-3.17-1v-.1a9.22,9.22,0,0,0,4.42-2.82,7.43,7.43,0,0,0,1.68-5,8.42,8.42,0,0,0-1.15-4.65,8.09,8.09,0,0,0-3-2.72,12.56,12.56,0,0,0-4.18-1.3,32.84,32.84,0,0,0-4.62-.33h-13.2v35.4h14.5a22.41,22.41,0,0,0,4.72-.5,13.53,13.53,0,0,0,4.28-1.65,9.42,9.42,0,0,0,3.1-3,8.52,8.52,0,0,0,1.2-4.68A9.39,9.39,0,0,0,189.66,68.47ZM170.21,52.72h5.3a10,10,0,0,1,1.85.18,6.18,6.18,0,0,1,1.7.57,3.39,3.39,0,0,1,1.22,1.13,3.22,3.22,0,0,1,.48,1.82,3.63,3.63,0,0,1-.43,1.8,3.4,3.4,0,0,1-1.12,1.2,4.92,4.92,0,0,1-1.58.65,7.51,7.51,0,0,1-1.77.2h-5.65Zm11.72,20a3.9,3.9,0,0,1-1.22,1.3,4.64,4.64,0,0,1-1.68.7,8.18,8.18,0,0,1-1.82.2h-7v-8h5.9a15.35,15.35,0,0,1,2,.15,8.47,8.47,0,0,1,2.05.55,4,4,0,0,1,1.57,1.18,3.11,3.11,0,0,1,.63,2A3.71,3.71,0,0,1,181.93,72.72Z"/>
+            </g>
+          </g>
+        </svg>
+      </a>
+      <p class="hint">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    </div>
+  </div>`;
+
+  const $ = i => document.getElementById(i);
+  if (!TMDB_KEY) $("sk").onclick = () => { S.key = $("k").value.trim(); Q = []; RC = null; RK = ""; save(); tab = 0; draw() };
+  
+  $("ex").onclick = exportCSV;
+  $("im").onclick = () => $("f").click();
+  $("f").onchange = e => { const f = e.target.files[0]; if (f) f.text().then(importCSV) };
+
+  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0 }; Q = []; RC = null; RK = ""; save(); tab = 0; draw() } };
+  $("g").onchange = e => { S.genre = +e.target.value; Q = []; save() };
+  
+  if (TMDB_KEY || S.key) try {
+    const g = await api("/genre/movie/list");
+    if (tab != 4) return;
+    $("g").innerHTML = '<option value="0">Todos</option>' + g.genres.map(x => `<option value="${x.id}">${x.name}</option>`).join("");
+    $("g").value = S.genre;
+  } catch(e) {}
+}
+
+function draw() {
+  window.key = null;
+  [0, 1, 2, 3, 4].forEach(i => document.getElementById("t" + i).className = i == tab ? "on" : "");
+  if (!(TMDB_KEY || S.key) && tab < 4) tab = 4;
+  [d0, d1, d2, d3, d4][tab]().catch(err);
+}
+
+[0, 1, 2, 3, 4].forEach(i => document.getElementById("t" + i).onclick = () => { tab = i; draw() });
+draw();
+</script>
+</body>
+</html>
