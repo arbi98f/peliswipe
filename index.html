@@ -39,13 +39,13 @@
     nav button { background: none; border: none; color: var(--text-color); padding: 0.75rem 1rem; font-size: 0.9rem; cursor: pointer; opacity: 0.7; }
     nav button.active { opacity: 1; border-bottom: 2px solid var(--accent-color); color: var(--accent-color); font-weight: bold; }
 
-    main { flex: 1; padding: 1rem; margin-bottom: 4rem; display: flex; flex-direction: column; align-items: center; }
+    main { flex: 1; padding: 1rem; margin-bottom: 4rem; display: flex; flex-direction: column; align-items: center; width: 100%; }
     .tab-content { width: 100%; max-width: 480px; display: none; }
     .tab-content.active { display: block; }
 
     /* Card & Buttons */
     .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .card img { width: 100%; height: 380px; object-fit: cover; }
+    .card img { width: 100%; height: 400px; object-fit: cover; background-color: var(--border-color); display: block; }
     .card-info { padding: 1rem; }
     .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
     .card-overview { font-size: 0.85rem; opacity: 0.8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
@@ -85,10 +85,10 @@
     <!-- TAB 1: DESCUBRIR -->
     <div id="tab-discover" class="tab-content active">
       <div id="movie-card" class="card">
-        <img id="card-img" src="" alt="Poster">
+        <img id="card-img" src="https://via.placeholder.com/500x750?text=Cargando+Poster..." alt="Poster">
         <div class="card-info">
-          <div id="card-title" class="card-title">Cargando...</div>
-          <p id="card-overview" class="card-overview"></p>
+          <div id="card-title" class="card-title">Ingresa tu API Key en Ajustes</div>
+          <p id="card-overview" class="card-overview">Si es la primera vez que entras, ve a la pestaña de Ajustes y guarda tu TMDB API Key para empezar a cargar películas.</p>
         </div>
       </div>
       <div class="actions">
@@ -108,6 +108,12 @@
 
     <!-- TAB 3: AJUSTES & METRICAS -->
     <div id="tab-settings" class="tab-content">
+      <div class="section-box">
+        <span class="section-title">API Key (TMDB)</span>
+        <input type="text" id="api-key-input" placeholder="Tu TMDB API Key">
+        <button class="btn" style="background:var(--accent-color); color:white;" onclick="saveApiKey()">Guardar Key</button>
+      </div>
+
       <div class="section-box">
         <span class="section-title" data-i18n="theme">Tema de pantalla</span>
         <select id="theme-select" onchange="changeTheme(this.value)">
@@ -138,12 +144,6 @@
           <div id="badge-2" class="badge-item"><span class="badge-icon">🎬</span><span data-i18n="b2">10 Vistas</span></div>
           <div id="badge-3" class="badge-item"><span class="badge-icon">🌙</span><span data-i18n="b3">Modo OLED</span></div>
         </div>
-      </div>
-
-      <div class="section-box">
-        <span class="section-title">API Key (TMDB)</span>
-        <input type="text" id="api-key-input" placeholder="Tu TMDB API Key">
-        <button class="btn" style="background:var(--border-color); color:var(--text-color);" onclick="saveApiKey()">Guardar Key</button>
       </div>
     </div>
   </main>
@@ -187,7 +187,10 @@
       applyLanguage(state.lang);
       updateStats();
       checkBadges();
-      if(state.apiKey) fetchMovies();
+      if(state.apiKey) {
+        document.getElementById('api-key-input').value = state.apiKey;
+        fetchMovies();
+      }
     });
 
     function switchTab(tabId, btn) {
@@ -230,6 +233,7 @@
       if(val) {
         state.apiKey = val;
         localStorage.setItem('tmdb_key', val);
+        alert('API Key guardada con éxito.');
         fetchMovies();
       }
     }
@@ -240,25 +244,43 @@
       try {
         const res = await fetch(url);
         const data = await res.json();
-        state.currentMovies = data.results || [];
-        state.currentIndex = 0;
-        renderCard();
-      } catch(e) { console.error(e); }
+        if(data.results && data.results.length > 0) {
+          state.currentMovies = data.results;
+          state.currentIndex = 0;
+          renderCard();
+        } else {
+          document.getElementById('card-title').textContent = "Error de API Key";
+          document.getElementById('card-overview').textContent = "Revisa que tu TMDB API Key ingresada en Ajustes sea válida.";
+        }
+      } catch(e) { 
+        console.error(e); 
+      }
     }
 
     function renderCard() {
+      if(!state.currentMovies || state.currentMovies.length === 0) return;
+      
       if(state.currentIndex >= state.currentMovies.length) {
         state.page++;
         fetchMovies();
         return;
       }
+      
       const movie = state.currentMovies[state.currentIndex];
-      document.getElementById('card-img').src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
-      document.getElementById('card-title').textContent = movie.title;
-      document.getElementById('card-overview').textContent = movie.overview || '';
+      const imgEl = document.getElementById('card-img');
+      
+      if (movie.poster_path) {
+        imgEl.src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+      } else {
+        imgEl.src = 'https://via.placeholder.com/500x750?text=Sin+Imagen';
+      }
+      
+      document.getElementById('card-title').textContent = movie.title || 'Sin título';
+      document.getElementById('card-overview').textContent = movie.overview || 'Sin descripción disponible.';
     }
 
     function swipe(action) {
+      if(!state.currentMovies.length) return;
       const movie = state.currentMovies[state.currentIndex];
       if(movie && action === 'seen') {
         state.seenMovies[movie.id] = { title: movie.title, rating: null };
