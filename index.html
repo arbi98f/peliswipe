@@ -1,514 +1,321 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PeliSwipe</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎬%3C/text%3E%3C/svg%3E">
   <style>
-    :root{--bg:#f4f4f7;--fg:#1a1a22;--card:#fff;--mut:#6b6b7a;--ac:#6d28d9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-    @media(prefers-color-scheme:dark){:root{--bg:#101015;--fg:#f1f1f6;--card:#1c1c25;--mut:#9a9aab}}
-    *{box-sizing:border-box}html,body{margin:0;height:100%}
-    body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
-    
-    /* Navegación adaptativa en 2 filas para celulares */
-    nav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 6px;justify-content:center;background:var(--bg);border-bottom:1px solid #8882}
-    nav button{flex:1 1 calc(25% - 6px);min-width:75px;border:0;border-radius:12px;padding:10px 4px;background:var(--card);color:var(--fg);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px #0001;text-align:center}
-    nav button.on{background:var(--ac);color:#fff}
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+      --accent-color: #6366f1;
+      --border-color: #334155;
+    }
 
-    main{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0;padding:0 14px 10px;position:relative}
-    .hint{color:var(--mut);font-size:13px;margin:4px 0 8px;text-align:center}
-    #deck{position:relative;flex:1;width:100%;max-width:380px;min-height:0}
-    .card{position:absolute;inset:0;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;box-shadow:0 8px 24px #0004;touch-action:none;user-select:none;background:#333 center/cover;cursor:grab}
-    .card:active{cursor:grabbing}
+    body.theme-light {
+      --bg-color: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-color: #0f172a;
+      --accent-color: #4f46e5;
+      --border-color: #cbd5e1;
+    }
+
+    body.theme-oled {
+      --bg-color: #000000;
+      --card-bg: #000000;
+      --text-color: #ffffff;
+      --accent-color: #818cf8;
+      --border-color: #262626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; display: flex; flex-direction: column; min-height: 100vh; }
+
+    header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--card-bg); border-bottom: 1px solid var(--border-color); }
+    h1 { font-size: 1.25rem; font-weight: 700; color: var(--accent-color); }
+
+    nav { display: flex; justify-content: space-around; background: var(--card-bg); border-top: 1px solid var(--border-color); position: fixed; bottom: 0; width: 100%; z-index: 10; }
+    nav button { background: none; border: none; color: var(--text-color); padding: 0.75rem 1rem; font-size: 0.9rem; cursor: pointer; opacity: 0.7; }
+    nav button.active { opacity: 1; border-bottom: 2px solid var(--accent-color); color: var(--accent-color); font-weight: bold; }
+
+    main { flex: 1; padding: 1rem; margin-bottom: 4rem; display: flex; flex-direction: column; align-items: center; }
+    .tab-content { width: 100%; max-width: 480px; display: none; }
+    .tab-content.active { display: block; }
+
+    /* Card & Buttons */
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .card img { width: 100%; height: 380px; object-fit: cover; }
+    .card-info { padding: 1rem; }
+    .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .card-overview { font-size: 0.85rem; opacity: 0.8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
     
-    /* Botón de tráiler ampliado para mayor comodidad táctil en móviles */
-    .card .play-hint{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);border-radius:24px;padding:8px 14px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer}
+    .actions { display: flex; gap: 1rem; margin-top: 1rem; width: 100%; }
+    .btn { flex: 1; padding: 0.75rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 1rem; }
+    .btn-skip { background: #ef4444; color: white; }
+    .btn-seen { background: #22c55e; color: white; }
+    .btn-roulette { background: #8b5cf6; color: white; width: 100%; margin-top: 0.75rem; }
+
+    /* Settings & Stats */
+    .section-box { background: var(--card-bg); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .section-title { font-weight: bold; margin-bottom: 0.5rem; display: block; color: var(--accent-color); }
+    select, input { width: 100%; padding: 0.5rem; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.75rem; }
     
-    a{color:inherit}.credits{text-align:center;margin-top:18px}.credits svg{height:auto}
-    kbd{background:var(--card);border:1px solid #8885;border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit}
-    .btns button.sm{width:46px;height:46px;font-size:20px;align-self:center}
-    .card.back{transform:scale(.95) translateY(10px);opacity:.7}
-    .info{padding:60px 20px 20px;background:linear-gradient(transparent,#000d)}
-    .info h2{margin:0;font-size:24px;line-height:1.2}.info p{margin:4px 0 0;opacity:.85;font-size:13px}
-    .tag{position:absolute;top:24px;padding:4px 12px;border:4px solid;border-radius:10px;font-size:26px;font-weight:800;opacity:0;background:#0006}
-    .tag.r{right:20px;color:#4ade80;border-color:#4ade80;transform:rotate(12deg)}.tag.l{left:20px;color:#f87171;border-color:#f87171;transform:rotate(-12deg)}
-    .btns{display:flex;gap:28px;padding:12px 0 4px}
-    .btns button{width:68px;height:68px;border-radius:50%;border:0;font-size:30px;background:var(--card);box-shadow:0 3px 10px #0003;cursor:pointer}
-    .empty{margin:auto;text-align:center;color:var(--mut);padding:20px}
-    .list{width:100%;max-width:520px;overflow-y:auto;flex:1;padding-bottom:20px}
-    .list h3{margin:16px 0 6px}
-    .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px;margin-bottom:8px}
-    .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884;cursor:pointer}
-    .row b{display:block;font-size:14px;cursor:pointer}
-    .row small{color:var(--mut)}
-    .row-actions{margin-left:auto;display:flex;flex-direction:column;gap:4px}
-    .row-actions button{border:0;background:none;font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px;text-align:right}
-    .row-actions button.btn-seen{color:var(--ac)}
-    .row-actions button.btn-ignore{color:#ef4444}
-    .b{border:0;border-radius:10px;background:var(--ac);color:#fff;padding:10px 14px;font-weight:600;margin:2px 4px 2px 0;cursor:pointer}
-    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #8885;background:var(--card);color:var(--fg);margin-bottom:6px}
-    .filter-row{display:flex;gap:10px;margin-bottom:6px}
-    .filter-col{flex:1;display:flex;flex-direction:column}
-    .filter-col label{font-size:12px;font-weight:600;color:var(--mut);margin-bottom:4px}
-    
-    /* Modal / Bottom Sheet para Tráiler y Dónde ver */
-    .modal-bg{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;justify-content:center;z-index:100;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
-    .modal-bg.on{opacity:1;pointer-events:auto}
-    .modal-content{background:var(--card);width:100%;max-width:500px;border-radius:24px 24px 0 0;padding:20px;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease-out}
-    .modal-bg.on .modal-content{transform:translateY(0)}
-    .providers-grid{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-    .provider-img{width:40px;height:40px;border-radius:8px;object-fit:cover}
-    .video-container{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin:10px 0;background:#000}
-    .video-container iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+    /* Achievements Badge */
+    .badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center; }
+    .badge-item { background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 6px; font-size: 0.75rem; opacity: 0.4; }
+    .badge-item.unlocked { opacity: 1; border-color: #f59e0b; }
+    .badge-icon { font-size: 1.5rem; display: block; margin-bottom: 0.2rem; }
+
+    /* List items */
+    .seen-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid var(--border-color); }
+    .rating-btns { display: flex; gap: 0.25rem; }
+    .btn-rate { background: none; border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+    .btn-rate.active { background: var(--accent-color); color: white; }
   </style>
 </head>
-<body>
-<nav>
-  <button id="t0">🔍 Buscar</button>
-  <button id="t1">🎬 Descubrir</button>
-  <button id="t2">👀 Vistas</button>
-  <button id="t3">🎯 Para ti</button>
-  <button id="t4">🍿 Watch Party</button>
-  <button id="t5">⭐ Gustos</button>
-  <button id="t6">⚙️ Ajustes</button>
-</nav>
-<main id="m"></main>
+<body class="theme-dark">
 
-<!-- Modal para Detalle / Tráiler / Plataformas -->
-<div class="modal-bg" id="modalBg">
-  <div class="modal-content" id="modalContent"></div>
-</div>
+  <header>
+    <h1>🎬 PeliSwipe</h1>
+    <span id="party-match" style="font-size: 0.8rem; font-weight: bold; color: #10b981;"></span>
+  </header>
 
-<script>
-const TMDB_KEY = "a03437a40a9ecc20a282981d75fd07b1"; 
-const IMG = "https://image.tmdb.org/t/p/w500", IMG2 = "https://image.tmdb.org/t/p/w185";
-let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }, tab = 1, Q = [], fp = null, RC = null, RK = "", H = [], partnerData = null, partnerRecs = null;
-
-try { Object.assign(S, JSON.parse(localStorage.getItem("peliswipe2")) || {}) } catch(e) {}
-const save = () => { try { localStorage.setItem("peliswipe2", JSON.stringify(S)) } catch(e) {} };
-const m = document.getElementById("m");
-
-async function api(path, params = {}) {
-  const u = new URL("https://api.themoviedb.org/3" + path);
-  u.searchParams.set("language", "es-ES");
-  for (const k in params) u.searchParams.set(k, params[k]);
-  const K = TMDB_KEY || S.key, h = {};
-  if (K.length > 40) h.Authorization = "Bearer " + K; else u.searchParams.set("api_key", K);
-  const r = await fetch(u, { headers: h });
-  if (!r.ok) throw new Error(r.status);
-  return r.json();
-}
-
-const n = x => ({ id: x.id, t: x.title, y: (x.release_date || "").slice(0, 4), p: x.poster_path, r: x.vote_average || 0 });
-
-async function more() {
-  const g = S.genre || 0; S.pg[g] = (S.pg[g] || 0) + 1; if (S.pg[g] > 500) return;
-  const p = { sort_by: "vote_count.desc", "vote_count.gte": 200, page: S.pg[g] };
-  if (g) p.with_genres = g;
-  if (S.year) p.primary_release_year = S.year;
-  if (S.decade) {
-    p["primary_release_date.gte"] = S.decade + "-01-01";
-    p["primary_release_date.lte"] = (S.decade + 9) + "-12-31";
-  }
-  if (S.minRating) p["vote_average.gte"] = S.minRating;
-  
-  const d = await api("/discover/movie", p);
-  d.results.map(n).filter(x => x.p && !(x.id in S.seen) && !Q.some(q => q.id == x.id)).forEach(x => Q.push(x));
-  save();
-}
-
-function fill() { return fp || (fp = (async () => { let t = 0; while (Q.length < 10 && t++ < 5) await more() })().finally(() => fp = null)) }
-const ans = (x, r) => { S.m[x.id] = { id: x.id, t: x.t, y: x.y, p: x.p }; S.seen[x.id] = !!r; save() };
-const err = e => { m.innerHTML = `<div class="empty">No pude cargar TMDB (${e.message}).<br>Revisa tu API key en ⚙️ Ajustes.</div>` };
-
-function cardHTML(x, top) {
-  return `<div class="card${top ? "" : " back"}" style="background-image:url(${IMG}${x.p})">
-    ${top ? '<div class="play-hint" data-action="trailer">▶️ Ver Tráiler</div>' : ''}
-    <div class="tag r">${tab == 1 ? "ME GUSTÓ" : "VISTA"}</div>
-    <div class="tag l">${tab == 1 ? "NO ME GUSTÓ" : "NO VISTA"}</div>
-    <div class="info"><h2>${x.t}</h2><p>${x.y} · ⭐ ${x.r ? x.r.toFixed(1) : "N/A"}</p></div>
-  </div>`;
-}
-
-function closeModal() {
-  const mb = document.getElementById("modalBg"), mc = document.getElementById("modalContent");
-  mb.classList.remove("on");
-  mc.innerHTML = "";
-}
-
-async function openDetails(movieId, movieTitle, movieYear) {
-  const mb = document.getElementById("modalBg"), mc = document.getElementById("modalContent");
-  mc.innerHTML = `<p class="hint">Cargando tráiler y plataformas...</p>`;
-  mb.classList.add("on");
-  
-  try {
-    const [videos, providers] = await Promise.all([
-      api(`/movie/${movieId}/videos`),
-      api(`/movie/${movieId}/watch/providers`)
-    ]);
-    
-    const trailer = videos.results.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) || videos.results[0];
-    const pe = providers.results?.PE || providers.results?.CL || providers.results?.MX || {};
-    const stream = pe.flatrate || [];
-
-    mc.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h2 style="margin:0">${movieTitle} <small>(${movieYear})</small></h2>
-        <button id="closeModal" style="border:0;background:none;font-size:20px;cursor:pointer">✖️</button>
+  <main>
+    <!-- TAB 1: DESCUBRIR -->
+    <div id="tab-discover" class="tab-content active">
+      <div id="movie-card" class="card">
+        <img id="card-img" src="" alt="Poster">
+        <div class="card-info">
+          <div id="card-title" class="card-title">Cargando...</div>
+          <p id="card-overview" class="card-overview"></p>
+        </div>
       </div>
-      ${trailer ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${trailer.key}" allow="autoplay" allowfullscreen></iframe></div>` : '<p class="hint">Sin tráiler disponible</p>'}
-      <h3>📺 Disponible en streaming:</h3>
-      <div class="providers-grid">
-        ${stream.length ? stream.map(p => `<img class="provider-img" src="${IMG2}${p.logo_path}" title="${p.provider_name}">`).join("") : '<p class="hint">No disponible en suscripción de streaming en tu región.</p>'}
+      <div class="actions">
+        <button class="btn btn-skip" onclick="swipe('skip')">❌ <span data-i18n="skip">Descartar</span></button>
+        <button class="btn btn-seen" onclick="swipe('seen')">✓ <span data-i18n="seen">Ya la vi</span></button>
       </div>
-    `;
-    document.getElementById("closeModal").onclick = closeModal;
-  } catch(e) {
-    mc.innerHTML = `<p class="hint">Error al cargar datos (${e.message})</p>`;
-  }
-}
-
-document.getElementById("modalBg").onclick = e => { if (e.target.id == "modalBg") closeModal() };
-
-function deck(list, onAns, txtL, txtR, empty) {
-  const pc = matchMedia("(hover:hover)").matches;
-  m.innerHTML = `<p class="hint">${pc ? `<kbd>A</kbd> / <kbd>←</kbd> ${txtL} · <kbd>D</kbd> / <kbd>→</kbd> ${txtR} · Toca tarjeta para Tráiler` : `Desliza → ${txtR} · ← ${txtL} · Toca para Tráiler`}</p><div id="deck"></div><div class="btns"><button id="bl" title="${txtL} (A)">✖️</button><button id="bu" class="sm" title="Deshacer (Z)">↩</button><button id="br" title="${txtR} (D)">💚</button></div>`;
-  const d = document.getElementById("deck");
-  if (!list.length) { m.innerHTML = `<div class="empty">${empty}</div>`; return }
-  d.innerHTML = (list[1] ? cardHTML(list[1], 0) : "") + cardHTML(list[0], 1);
-  const c = d.lastElementChild, tl = c.querySelector(".tag.l"), tr = c.querySelector(".tag.r");
-  let sx = null, dx = 0, moved = false;
-  const set = v => { dx = v; c.style.transform = `translateX(${v}px) rotate(${v / 18}deg)`; tr.style.opacity = Math.max(0, v / 100); tl.style.opacity = Math.max(0, -v / 100) };
-  let done = false;
-  const go = r => { if (done) return; done = true; c.style.transition = "transform .3s"; c.style.transform = `translateX(${r ? 600 : -600}px) rotate(${r ? 30 : -30}deg)`; setTimeout(() => onAns(list[0], r), 250) };
-  
-  c.onpointerdown = e => { sx = e.clientX; moved = false; c.setPointerCapture(e.pointerId); c.style.transition = "none" };
-  c.onpointermove = e => { if (sx !== null) { if (Math.abs(e.clientX - sx) > 5) moved = true; set(e.clientX - sx) } };
-  c.onpointerup = c.onpointercancel = e => { 
-    if (sx === null) return; sx = null; 
-    if (!moved) { 
-      if (e.target.closest('[data-action="trailer"]') || !e.target.closest('.btns')) {
-        openDetails(list[0].id, list[0].t, list[0].y);
-      }
-      c.style.transition = "transform .2s"; set(0); return; 
-    }
-    if (dx > 100) go(1); else if (dx < -100) go(0); else { c.style.transition = "transform .2s"; set(0) } 
-  };
-  document.getElementById("bu").onclick = undo; document.getElementById("br").onclick = () => go(1); document.getElementById("bl").onclick = () => go(0);
-  window.key = e => { if (e.key == "ArrowRight") go(1); if (e.key == "ArrowLeft") go(0) };
-}
-
-const undo = () => { const h = H.pop(); if (!h) return; if (h.tab == 1) { delete S.seen[h.x.id]; delete S.m[h.x.id]; Q.unshift(h.x) } else delete S.like[h.x.id]; tab = h.tab; save(); draw() };
-
-document.addEventListener("keydown", e => {
-  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
-  const k = e.key.toLowerCase();
-  if (k == "z" && tab == 1) { undo(); return }
-  if (window.key) window.key({ key: k == "a" ? "ArrowLeft" : k == "d" ? "ArrowRight" : e.key })
-});
-
-// 0. BUSCADOR MANUAL
-async function d0() {
-  m.innerHTML = `<div class="list">
-    <input type="text" id="srch" placeholder="Escribe el título de una película...">
-    <div id="srchRes"></div>
-  </div>`;
-  const inpt = document.getElementById("srch"), res = document.getElementById("srchRes");
-  let t = null;
-  inpt.oninput = () => {
-    clearTimeout(t);
-    const q = inpt.value.trim();
-    if (!q) { res.innerHTML = ""; return; }
-    t = setTimeout(async () => {
-      try {
-        const d = await api("/search/movie", { query: q });
-        res.innerHTML = d.results.slice(0, 15).map(n).map(x => row(x, `<button class="btn-seen" data-a="addSeen" data-id="${x.id}">Ya la vi</button><button class="btn-seen" data-a="addLike" data-id="${x.id}">💚 Me gustó</button>`)).join("");
-        res.onclick = e => {
-          const target = e.target;
-          const b = target.closest("[data-a]"); 
-          if (b) {
-            const id = +b.dataset.id, item = d.results.map(n).find(i => i.id == id);
-            if (b.dataset.a == "addSeen") { S.m[id] = item; S.seen[id] = true; save(); alert(`"${item.t}" agregada a Vistas.`); }
-            if (b.dataset.a == "addLike") { S.m[id] = item; S.seen[id] = true; S.like[id] = true; save(); alert(`"${item.t}" agregada a Favoritas.`); }
-            return;
-          }
-          const rowEl = target.closest(".row");
-          if (rowEl) {
-            const imgEl = rowEl.querySelector("img");
-            if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
-          }
-        };
-      } catch(e) {}
-    }, 300);
-  };
-}
-
-// 1. DESCUBRIR
-async function d1() {
-  Q = Q.filter(x => !(x.id in S.seen));
-  if (Q.length < 3) { m.innerHTML = '<div class="empty">Cargando películas…</div>'; try { await fill() } catch(e) { return err(e) } }
-  else if (Q.length < 10) fill().catch(() => {});
-  if (tab != 1) return;
-  Q.slice(0, 4).forEach(x => { new Image().src = IMG + x.p });
-  deck(Q.slice(0, 2), (x, r) => { Q.shift(); ans(x, r); H.push({ tab: 1, x }); draw() }, "no la he visto", "la vi", "No hay películas con este filtro.");
-}
-
-// 2. VISTAS
-function d2() {
-  const l = Object.values(S.m).filter(x => S.seen[x.id] && !(x.id in S.like));
-  deck(l.slice(0, 2), (x, r) => { S.like[x.id] = !!r; H.push({ tab: 2, x }); save(); draw() }, "no me gustó", "me gustó", "No tienes películas vistas por calificar.");
-}
-
-const lst = v => Object.values(S.m).filter(x => S.like[x.id] === v);
-const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt="" data-id="${x.id}" data-title="${x.t}" data-year="${x.y}"><div><b data-id="${x.id}" data-title="${x.t}" data-year="${x.y}">${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div><div class="row-actions">${ex}</div></div>`;
-
-// 3. RECOMENDACIONES (PARA TI)
-async function d3() {
-  const L = lst(true), N = lst(false), key = L.length + "/" + N.length;
-  m.innerHTML = `<div class="list"><h3>🎯 Recomendadas basadas en tus gustos</h3><div id="rc"><p class="hint">Calculando mejores recomendaciones...</p></div></div>`;
-  const el = document.getElementById("rc");
-  if (!L.length) { el.innerHTML = '<p class="hint">Califica películas en "Vistas" para recibir recomendaciones.</p>'; return }
-  if (RK != key) {
-    const pick = (a, k) => [...a].sort(() => Math.random() - .5).slice(0, k), sc = {}, mt = {};
-    const run = (arr, w) => Promise.all(arr.map(async x => { try { const d = await api(`/movie/${x.id}/recommendations`); d.results.forEach(r => { if (!r.poster_path || S.seen[r.id] === true) return; mt[r.id] = n(r); const c = sc[r.id] || (sc[r.id] = { s: 0, c: 0 }); c.s += w * (1 + r.vote_average / 10); if (w > 0) c.c++ }) } catch(e) {} }));
-    await run(pick(L, 10), 1); await run(pick(N, 5), -1.5);
-    RC = Object.keys(sc).filter(i => sc[i].s > 0).sort((a, b) => sc[b].s - sc[a].s).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · similar a ${sc[i].c} de tus favoritas` })); RK = key;
-  }
-  if (tab != 3) return;
-  el.innerHTML = RC.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button><button class="btn-ignore" data-a="ignore" data-id="${x.id}">No me interesa</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora.</p>';
-  
-  el.onclick = e => {
-    const target = e.target;
-    const b = target.closest("[data-a]");
-    if (b) {
-      const id = +b.dataset.id;
-      if (b.dataset.a == "seen") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; RC = RC.filter(x => x.id != id); save(); draw(); }
-      if (b.dataset.a == "ignore") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; S.like[id] = false; RC = RC.filter(x => x.id != id); save(); draw(); }
-      return;
-    }
-    const rowEl = target.closest(".row");
-    if (rowEl) {
-      const imgEl = rowEl.querySelector("img");
-      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
-    }
-  };
-}
-
-// 4. WATCH PARTY (Ver Juntos - Independiente)
-async function d4() {
-  m.innerHTML = `<div class="list">
-    <div style="background:var(--card);padding:14px;border-radius:12px;margin-bottom:14px">
-      <b>🍿 Watch Party (Ver Juntos)</b><br>
-      <small class="hint" style="display:block;margin:4px 0 10px">Carga el CSV de la otra persona para calcular películas recomendadas exclusivamente para ambos.</small>
-      <button class="b" id="loadPartner">Cargar CSV Externo</button>
-      <input type="file" id="fPartner" accept=".csv" hidden>
+      <button class="btn btn-roulette" onclick="triggerRoulette()">🎲 <span data-i18n="roulette">Ruleta Rápida</span></button>
     </div>
-    <div id="partnerContent">
-      ${partnerRecs ? partnerRecs : '<p class="hint">Sube un archivo CSV arriba para generar las recomendaciones conjuntas.</p>'}
-    </div>
-  </div>`;
 
-  document.getElementById("loadPartner").onclick = () => document.getElementById("fPartner").click();
-  document.getElementById("fPartner").onchange = e => {
-    const f = e.target.files[0];
-    if (f) f.text().then(async txt => {
-      const pLikes = [];
-      parse(txt.replace(/^\ufeff/, "")).forEach((r, i) => {
-        if (i > 0 && r[0] && r[5] == "1") pLikes.push({ id: +r[0], t: r[1] });
-      });
-      
-      const myLikes = lst(true);
-      if (!pLikes.length || !myLikes.length) {
-        alert("Faltan películas con 'Me gustó' en alguno de los dos archivos para calcular.");
-        return;
-      }
-
-      document.getElementById("partnerContent").innerHTML = `<p class="hint">Calculando recomendaciones para ver juntos...</p>`;
-      
-      try {
-        const pick = (arr, k) => [...arr].sort(() => Math.random() - .5).slice(0, k);
-        const sc = {}, mt = {};
-        const run = async (arr) => {
-          await Promise.all(arr.map(async x => {
-            try {
-              const d = await api(`/movie/${x.id}/recommendations`);
-              d.results.forEach(r => {
-                if (!r.poster_path || S.seen[r.id] === true) return;
-                mt[r.id] = n(r);
-                sc[r.id] = (sc[r.id] || 0) + (1 + r.vote_average / 10);
-              });
-            } catch(e) {}
-          }));
-        };
-
-        await run(pick(myLikes, 8));
-        await run(pick(pLikes, 8));
-
-        const list = Object.keys(sc).sort((a, b) => sc[b] - sc[a]).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · Ideal para ambos` }));
-        
-        partnerRecs = list.length ? `<h3>🎯 Recomendadas para Ver Juntos (${list.length})</h3>` + list.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button>`)).join("") : '<p class="hint">No se encontraron recomendaciones conjuntas.</p>';
-        
-        document.getElementById("partnerContent").innerHTML = partnerRecs;
-      } catch(err) {
-        document.getElementById("partnerContent").innerHTML = `<p class="hint">Error al calcular recomendaciones conjuntas.</p>`;
-      }
-    });
-  };
-
-  document.getElementById("partnerContent").onclick = e => {
-    const target = e.target;
-    const b = target.closest("[data-a]");
-    if (b && b.dataset.a == "seen") {
-      const id = +b.dataset.id;
-      S.seen[id] = true;
-      save();
-      b.closest(".row").remove();
-      return;
-    }
-    const rowEl = target.closest(".row");
-    if (rowEl) {
-      const imgEl = rowEl.querySelector("img");
-      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
-    }
-  };
-}
-
-// 5. GUSTOS
-async function d5() {
-  const L = lst(true), N = lst(false);
-  m.innerHTML = `<div class="list">
-    <h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}
-    <h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}
-  </div>`;
-
-  m.querySelector(".list").onclick = e => {
-    const target = e.target;
-    const b = target.closest("[data-a]");
-    if (b && b.dataset.a == "undo") {
-      delete S.like[+b.dataset.id]; save(); draw();
-      return;
-    }
-    const rowEl = target.closest(".row");
-    if (rowEl) {
-      const imgEl = rowEl.querySelector("img");
-      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
-    }
-  };
-}
-
-// --- CSV ---
-const esc = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-function parse(t) {
-  const rows = []; let r = [], c = "", q = false;
-  for (let i = 0; i < t.length; i++) {
-    const ch = t[i];
-    if (q) { if (ch == '"') { if (t[i + 1] == '"') { c += '"'; i++ } else q = false } else c += ch }
-    else if (ch == '"') q = true;
-    else if (ch == ",") { r.push(c); c = "" }
-    else if (ch == "\n" || ch == "\r") { if (ch == "\r" && t[i + 1] == "\n") i++; r.push(c); c = ""; rows.push(r); r = [] }
-    else c += ch;
-  }
-  if (c || r.length) { r.push(c); rows.push(r) }
-  return rows;
-}
-
-function exportCSV() {
-  const rows = ["id,titulo,anio,poster,vista,gusto"];
-  for (const id in S.seen) { const x = S.m[id] || {}; rows.push([id, esc(x.t), x.y, x.p, S.seen[id] ? 1 : 0, id in S.like ? (S.like[id] ? 1 : 0) : ""].join(",")) }
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv" })); a.download = "peliswipe-gustos.csv"; a.click();
-}
-
-function importCSV(txt) {
-  let k = 0;
-  parse(txt.replace(/^\ufeff/, "")).forEach((r, i) => {
-    const id = +r[0]; if (!id || i == 0 && r[0] == "id") return;
-    S.m[id] = { id, t: r[1], y: r[2], p: r[3] }; S.seen[id] = r[4] == "1"; if (r[5] === "1" || r[5] === "0") S.like[id] = r[5] == "1"; k++;
-  });
-  save(); RK = ""; Q = []; alert(k + " películas importadas."); draw();
-}
-
-// 6. AJUSTES
-async function d6() {
-  let yearsOpts = '<option value="0">Cualquier año</option>';
-  for(let y = 2026; y >= 1950; y--) {
-    yearsOpts += `<option value="${y}">${y}</option>`;
-  }
-
-  let ratingsOpts = '<option value="0">Cualquiera</option>';
-  for(let r = 1; r <= 10; r++) {
-    ratingsOpts += `<option value="${r}">${r}.0 o más</option>`;
-  }
-
-  m.innerHTML = `<div class="list">
-    ${TMDB_KEY ? "" : `<h3>🔑 API key de TMDB</h3><input id="k" value="${S.key}" placeholder="Pega tu API key"><button class="b" id="sk">Guardar</button>`}
-    <h3>🎭 Género en Descubrir</h3>
-    <select id="g"><option value="0">Todos</option></select>
-    
-    <div class="filter-row">
-      <div class="filter-col">
-        <label>Filtro por Año</label>
-        <select id="fy">${yearsOpts}</select>
+    <!-- TAB 2: VISTAS & CALIFICACIÓN -->
+    <div id="tab-history" class="tab-content">
+      <div class="section-box">
+        <span class="section-title" data-i18n="historyTitle">Mis Películas Vistas</span>
+        <div id="history-list"></div>
       </div>
-      <div class="filter-col">
-        <label>Filtro por Década</label>
-        <select id="fd">
-          <option value="0">Cualquier década</option>
-          <option value="2020">2020s</option>
-          <option value="2010">2010s</option>
-          <option value="2000">2000s</option>
-          <option value="1990">1990s</option>
-          <option value="1980">1980s</option>
-          <option value="1970">1970s</option>
+    </div>
+
+    <!-- TAB 3: AJUSTES & METRICAS -->
+    <div id="tab-settings" class="tab-content">
+      <div class="section-box">
+        <span class="section-title" data-i18n="theme">Tema de pantalla</span>
+        <select id="theme-select" onchange="changeTheme(this.value)">
+          <option value="dark">Oscuro (Defecto)</option>
+          <option value="oled">OLED Puro (Negro #000)</option>
+          <option value="light">Claro</option>
         </select>
       </div>
+
+      <div class="section-box">
+        <span class="section-title" data-i18n="lang">Idioma</span>
+        <select id="lang-select" onchange="changeLanguage(this.value)">
+          <option value="es-ES">Español</option>
+          <option value="en-US">English</option>
+        </select>
+      </div>
+
+      <div class="section-box">
+        <span class="section-title" data-i18n="stats">📊 Tus Estadísticas</span>
+        <p id="stat-count" style="font-size:0.85rem;">Vistas: 0</p>
+        <p id="stat-time" style="font-size:0.85rem;">Tiempo estimado: 0 hrs</p>
+      </div>
+
+      <div class="section-box">
+        <span class="section-title" data-i18n="achievements">🏆 Logros</span>
+        <div class="badge-grid">
+          <div id="badge-1" class="badge-item"><span class="badge-icon">🍿</span><span data-i18n="b1">Primer Swipe</span></div>
+          <div id="badge-2" class="badge-item"><span class="badge-icon">🎬</span><span data-i18n="b2">10 Vistas</span></div>
+          <div id="badge-3" class="badge-item"><span class="badge-icon">🌙</span><span data-i18n="b3">Modo OLED</span></div>
+        </div>
+      </div>
+
+      <div class="section-box">
+        <span class="section-title">API Key (TMDB)</span>
+        <input type="text" id="api-key-input" placeholder="Tu TMDB API Key">
+        <button class="btn" style="background:var(--border-color); color:var(--text-color);" onclick="saveApiKey()">Guardar Key</button>
+      </div>
     </div>
+  </main>
 
-    <h3>⭐ Nota mínima TMDB</h3>
-    <select id="fr">${ratingsOpts}</select>
+  <nav>
+    <button class="active" onclick="switchTab('discover', this)" data-i18n="navDiscover">Descubrir</button>
+    <button onclick="switchTab('history', this)" data-i18n="navHistory">Vistas</button>
+    <button onclick="switchTab('settings', this)" data-i18n="navSettings">Ajustes</button>
+  </nav>
 
-    <h3>💾 Tus gustos (CSV)</h3>
-    <button class="b" id="ex">Exportar CSV</button>
-    <button class="b" id="im">Importar CSV</button>
-    <input type="file" id="f" accept=".csv" hidden>
-    
-    <h3>🗑️ Datos</h3>
-    <button class="b" id="rs" style="background:#ef4444">Reiniciar todo</button>
-  </div>`;
+  <script>
+    const i18n = {
+      'es-ES': {
+        skip: "Descartar", seen: "Ya la vi", roulette: "Ruleta Rápida",
+        historyTitle: "Mis Películas Vistas (Calificación)", theme: "Tema de Pantalla",
+        lang: "Idioma", stats: "📊 Tus Estadísticas", achievements: "🏆 Logros",
+        b1: "Primer Swipe", b2: "10 Vistas", b3: "Modo OLED",
+        navDiscover: "Descubrir", navHistory: "Vistas", navSettings: "Ajustes"
+      },
+      'en-US': {
+        skip: "Skip", seen: "Seen it", roulette: "Quick Roulette",
+        historyTitle: "Watched Movies (Rating)", theme: "Screen Theme",
+        lang: "Language", stats: "📊 Your Stats", achievements: "🏆 Achievements",
+        b1: "First Swipe", b2: "10 Watched", b3: "OLED Mode",
+        navDiscover: "Discover", navHistory: "Watched", navSettings: "Settings"
+      }
+    };
 
-  const $ = i => document.getElementById(i);
-  if (!TMDB_KEY) $("sk").onclick = () => { S.key = $("k").value.trim(); Q = []; RC = null; RK = ""; save(); tab = 1; draw() };
-  
-  $("ex").onclick = exportCSV;
-  $("im").onclick = () => $("f").click();
-  $("f").onchange = e => { const f = e.target.files[0]; if (f) f.text().then(importCSV) };
-  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }; Q = []; RC = null; partnerRecs = null; save(); tab = 1; draw() } };
-  
-  $("g").onchange = e => { S.genre = +e.target.value; Q = []; save() };
-  $("fy").onchange = e => { S.year = +e.target.value; if(S.year) { S.decade = 0; } Q = []; save(); draw(); };
-  $("fd").onchange = e => { S.decade = +e.target.value; if(S.decade) { S.year = 0; } Q = []; save(); draw(); };
-  $("fr").onchange = e => { S.minRating = +e.target.value; Q = []; save() };
+    let state = {
+      apiKey: localStorage.getItem('tmdb_key') || '',
+      lang: localStorage.getItem('app_lang') || 'es-ES',
+      theme: localStorage.getItem('app_theme') || 'dark',
+      seenMovies: JSON.parse(localStorage.getItem('seen_movies') || '{}'),
+      currentMovies: [],
+      currentIndex: 0,
+      page: 1
+    };
 
-  if (TMDB_KEY || S.key) try {
-    const g = await api("/genre/movie/list");
-    if (tab != 6) return;
-    $("g").innerHTML = '<option value="0">Todos</option>' + g.genres.map(x => `<option value="${x.id}">${x.name}</option>`).join("");
-    $("g").value = S.genre || 0;
-    $("fy").value = S.year || 0;
-    $("fd").value = S.decade || 0;
-    $("fr").value = S.minRating || 0;
-  } catch(e) {}
-}
+    document.addEventListener("DOMContentLoaded", () => {
+      applyTheme(state.theme);
+      applyLanguage(state.lang);
+      updateStats();
+      checkBadges();
+      if(state.apiKey) fetchMovies();
+    });
 
-function draw() {
-  window.key = null;
-  [0, 1, 2, 3, 4, 5, 6].forEach(i => document.getElementById("t" + i).className = i == tab ? "on" : "");
-  if (!(TMDB_KEY || S.key) && tab < 6) tab = 6;
-  [d0, d1, d2, d3, d4, d5, d6][tab]().catch(err);
-}
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      btn.classList.add('active');
+      if(tabId === 'history') renderHistory();
+    }
 
-[0, 1, 2, 3, 4, 5, 6].forEach(i => document.getElementById("t" + i).onclick = () => { tab = i; draw() });
-draw();
-</script>
+    function changeTheme(val) {
+      state.theme = val;
+      localStorage.setItem('app_theme', val);
+      applyTheme(val);
+      checkBadges();
+    }
+
+    function applyTheme(val) {
+      document.body.className = 'theme-' + val;
+      document.getElementById('theme-select').value = val;
+    }
+
+    function changeLanguage(val) {
+      state.lang = val;
+      localStorage.setItem('app_lang', val);
+      applyLanguage(val);
+      if(state.apiKey) fetchMovies();
+    }
+
+    function applyLanguage(lang) {
+      document.getElementById('lang-select').value = lang;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(i18n[lang][key]) el.textContent = i18n[lang][key];
+      });
+    }
+
+    function saveApiKey() {
+      const val = document.getElementById('api-key-input').value.trim();
+      if(val) {
+        state.apiKey = val;
+        localStorage.setItem('tmdb_key', val);
+        fetchMovies();
+      }
+    }
+
+    async function fetchMovies() {
+      if(!state.apiKey) return;
+      const url = `https://api.themoviedb.org/3/movie/popular?api_key=${state.apiKey}&language=${state.lang}&page=${state.page}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        state.currentMovies = data.results || [];
+        state.currentIndex = 0;
+        renderCard();
+      } catch(e) { console.error(e); }
+    }
+
+    function renderCard() {
+      if(state.currentIndex >= state.currentMovies.length) {
+        state.page++;
+        fetchMovies();
+        return;
+      }
+      const movie = state.currentMovies[state.currentIndex];
+      document.getElementById('card-img').src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
+      document.getElementById('card-title').textContent = movie.title;
+      document.getElementById('card-overview').textContent = movie.overview || '';
+    }
+
+    function swipe(action) {
+      const movie = state.currentMovies[state.currentIndex];
+      if(movie && action === 'seen') {
+        state.seenMovies[movie.id] = { title: movie.title, rating: null };
+        localStorage.setItem('seen_movies', JSON.stringify(state.seenMovies));
+        updateStats();
+        checkBadges();
+      }
+      state.currentIndex++;
+      renderCard();
+    }
+
+    function triggerRoulette() {
+      if(!state.currentMovies.length) return;
+      const randIndex = Math.floor(Math.random() * state.currentMovies.length);
+      state.currentIndex = randIndex;
+      renderCard();
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-list');
+      container.innerHTML = '';
+      const keys = Object.keys(state.seenMovies);
+      if(!keys.length) { container.innerHTML = '<p style="font-size:0.8rem; opacity:0.6;">Sin películas registradas</p>'; return; }
+
+      keys.forEach(id => {
+        const item = state.seenMovies[id];
+        const div = document.createElement('div');
+        div.className = 'seen-item';
+        div.innerHTML = `
+          <span style="font-size:0.9rem;">${item.title}</span>
+          <div class="rating-btns">
+            <button class="btn-rate ${item.rating === 'down' ? 'active' : ''}" onclick="rateMovie(${id}, 'down')">👎</button>
+            <button class="btn-rate ${item.rating === 'up' ? 'active' : ''}" onclick="rateMovie(${id}, 'up')">👍</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function rateMovie(id, rating) {
+      state.seenMovies[id].rating = rating;
+      localStorage.setItem('seen_movies', JSON.stringify(state.seenMovies));
+      renderHistory();
+    }
+
+    function updateStats() {
+      const count = Object.keys(state.seenMovies).length;
+      document.getElementById('stat-count').textContent = `Vistas: ${count}`;
+      document.getElementById('stat-time').textContent = `Tiempo estimado: ${Math.round(count * 2)} hrs`;
+    }
+
+    function checkBadges() {
+      const count = Object.keys(state.seenMovies).length;
+      if(count > 0) document.getElementById('badge-1').classList.add('unlocked');
+      if(count >= 10) document.getElementById('badge-2').classList.add('unlocked');
+      if(state.theme === 'oled') document.getElementById('badge-3').classList.add('unlocked');
+    }
+  </script>
 </body>
 </html>
