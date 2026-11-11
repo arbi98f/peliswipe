@@ -11,7 +11,7 @@
     *{box-sizing:border-box}html,body{margin:0;height:100%}
     body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
     nav{display:flex;gap:4px;padding:8px 4px;justify-content:center;overflow-x:auto}
-    nav button{flex:1;max-width:110px;border:0;border-radius:20px;padding:8px 2px;background:var(--card);color:var(--fg);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap}
+    nav button{flex:1;max-width:105px;border:0;border-radius:20px;padding:8px 2px;background:var(--card);color:var(--fg);font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap}
     nav button.on{background:var(--ac);color:#fff}
     main{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0;padding:0 14px 10px;position:relative}
     .hint{color:var(--mut);font-size:13px;margin:4px 0 8px;text-align:center}
@@ -30,7 +30,7 @@
     .btns{display:flex;gap:28px;padding:12px 0 4px}
     .btns button{width:68px;height:68px;border-radius:50%;border:0;font-size:30px;background:var(--card);box-shadow:0 3px 10px #0003;cursor:pointer}
     .empty{margin:auto;text-align:center;color:var(--mut);padding:20px}
-    .list{width:100%;max-width:520px;overflow-y:auto;flex:1}
+    .list{width:100%;max-width:520px;overflow-y:auto;flex:1;padding-bottom:20px}
     .list h3{margin:16px 0 6px}
     .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px;margin-bottom:8px}
     .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884}
@@ -41,6 +41,9 @@
     .row-actions button.btn-ignore{color:#ef4444}
     .b{border:0;border-radius:10px;background:var(--ac);color:#fff;padding:10px 14px;font-weight:600;margin:2px 4px 2px 0;cursor:pointer}
     input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #8885;background:var(--card);color:var(--fg);margin-bottom:6px}
+    .filter-row{display:flex;gap:10px;margin-bottom:6px}
+    .filter-col{flex:1;display:flex;flex-direction:column}
+    .filter-col label{font-size:12px;font-weight:600;color:var(--mut);margin-bottom:4px}
     
     /* Modal / Bottom Sheet para Tráiler y Dónde ver */
     .modal-bg{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;justify-content:center;z-index:100;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
@@ -59,8 +62,9 @@
   <button id="t1">👀 Vistas</button>
   <button id="t2">🎯 Para ti</button>
   <button id="t3">🔍 Buscar</button>
-  <button id="t4">⭐ Gustos</button>
-  <button id="t5">⚙️ Ajustes</button>
+  <button id="t4">🍿 Watch Party</button>
+  <button id="t5">⭐ Gustos</button>
+  <button id="t6">⚙️ Ajustes</button>
 </nav>
 <main id="m"></main>
 
@@ -72,7 +76,7 @@
 <script>
 const TMDB_KEY = "a03437a40a9ecc20a282981d75fd07b1"; 
 const IMG = "https://image.tmdb.org/t/p/w500", IMG2 = "https://image.tmdb.org/t/p/w185";
-let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, minRating: 0 }, tab = 0, Q = [], fp = null, RC = null, RK = "", H = [], partnerData = null;
+let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }, tab = 0, Q = [], fp = null, RC = null, RK = "", H = [], partnerData = null, partnerRecs = null;
 
 try { Object.assign(S, JSON.parse(localStorage.getItem("peliswipe2")) || {}) } catch(e) {}
 const save = () => { try { localStorage.setItem("peliswipe2", JSON.stringify(S)) } catch(e) {} };
@@ -96,6 +100,10 @@ async function more() {
   const p = { sort_by: "vote_count.desc", "vote_count.gte": 200, page: S.pg[g] };
   if (g) p.with_genres = g;
   if (S.year) p.primary_release_year = S.year;
+  if (S.decade) {
+    p["primary_release_date.gte"] = S.decade + "-01-01";
+    p["primary_release_date.lte"] = (S.decade + 9) + "-12-31";
+  }
   if (S.minRating) p["vote_average.gte"] = S.minRating;
   
   const d = await api("/discover/movie", p);
@@ -116,7 +124,12 @@ function cardHTML(x, top) {
   </div>`;
 }
 
-// Modal de detalles (Tráiler + Dónde ver)
+function closeModal() {
+  const mb = document.getElementById("modalBg"), mc = document.getElementById("modalContent");
+  mb.classList.remove("on");
+  mc.innerHTML = "";
+}
+
 async function openDetails(item) {
   const mb = document.getElementById("modalBg"), mc = document.getElementById("modalContent");
   mc.innerHTML = `<p class="hint">Cargando tráiler y plataformas...</p>`;
@@ -137,19 +150,19 @@ async function openDetails(item) {
         <h2 style="margin:0">${item.t} <small>(${item.y})</small></h2>
         <button id="closeModal" style="border:0;background:none;font-size:20px;cursor:pointer">✖️</button>
       </div>
-      ${trailer ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${trailer.key}" allowfullscreen></iframe></div>` : '<p class="hint">Sin tráiler disponible</p>'}
+      ${trailer ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${trailer.key}" allow="autoplay" allowfullscreen></iframe></div>` : '<p class="hint">Sin tráiler disponible</p>'}
       <h3>📺 Disponible en streaming:</h3>
       <div class="providers-grid">
         ${stream.length ? stream.map(p => `<img class="provider-img" src="${IMG2}${p.logo_path}" title="${p.provider_name}">`).join("") : '<p class="hint">No disponible en suscripción de streaming en tu región.</p>'}
       </div>
     `;
-    document.getElementById("closeModal").onclick = () => mb.classList.remove("on");
+    document.getElementById("closeModal").onclick = closeModal;
   } catch(e) {
     mc.innerHTML = `<p class="hint">Error al cargar datos (${e.message})</p>`;
   }
 }
 
-document.getElementById("modalBg").onclick = e => { if (e.target.id == "modalBg") e.target.classList.remove("on") };
+document.getElementById("modalBg").onclick = e => { if (e.target.id == "modalBg") closeModal() };
 
 function deck(list, onAns, txtL, txtR, empty) {
   const pc = matchMedia("(hover:hover)").matches;
@@ -244,45 +257,81 @@ async function d3() {
   };
 }
 
-// 4. GUSTOS + MODO PAREJA
+// 4. WATCH PARTY (Ver Juntos - Independiente)
 async function d4() {
-  const L = lst(true), N = lst(false);
-  let matchHTML = "";
-  if (partnerData) {
-    const partnerLikes = Object.keys(partnerData.like || {}).filter(k => partnerData.like[k]);
-    const matches = L.filter(x => partnerLikes.includes(String(x.id)));
-    matchHTML = `<h3>👥 Coincidencias de Pareja (${matches.length})</h3>${matches.map(x => row(x, '')).join("") || '<p class="hint">Sin coincidencias en lo que a ambos les gusta.</p>'}`;
-  }
-
   m.innerHTML = `<div class="list">
-    <div style="background:var(--card);padding:10px;border-radius:12px;margin-bottom:12px">
-      <b>👥 Modo Cita / Pareja</b><br>
-      <small class="hint">Carga el CSV de tu pareja para comparar gustos.</small><br>
-      <button class="b" id="loadPartner">Cargar CSV Pareja</button>
+    <div style="background:var(--card);padding:14px;border-radius:12px;margin-bottom:14px">
+      <b>🍿 Watch Party (Ver Juntos)</b><br>
+      <small class="hint" style="display:block;margin:4px 0 10px">Carga el CSV de la otra persona para calcular películas recomendadas exclusivamente para ambos.</small>
+      <button class="b" id="loadPartner">Cargar CSV Externo</button>
       <input type="file" id="fPartner" accept=".csv" hidden>
     </div>
-    ${matchHTML}
-    <h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}
-    <h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}
+    <div id="partnerContent">
+      ${partnerRecs ? partnerRecs : '<p class="hint">Sube un archivo CSV arriba para generar las recomendaciones conjuntas.</p>'}
+    </div>
   </div>`;
 
   document.getElementById("loadPartner").onclick = () => document.getElementById("fPartner").click();
   document.getElementById("fPartner").onchange = e => {
     const f = e.target.files[0];
-    if (f) f.text().then(txt => {
-      partnerData = { like: {} };
+    if (f) f.text().then(async txt => {
+      const pLikes = [];
       parse(txt.replace(/^\ufeff/, "")).forEach((r, i) => {
-        if (i > 0 && r[0]) partnerData.like[r[0]] = r[5] == "1";
+        if (i > 0 && r[0] && r[5] == "1") pLikes.push({ id: +r[0], t: r[1] });
       });
-      alert("CSV de pareja cargado."); draw();
+      
+      const myLikes = lst(true);
+      if (!pLikes.length || !myLikes.length) {
+        alert("Faltan películas con 'Me gustó' en alguno de los dos archivos para calcular.");
+        return;
+      }
+
+      document.getElementById("partnerContent").innerHTML = `<p class="hint">Calculando recomendaciones para ver juntos...</p>`;
+      
+      try {
+        const pick = (arr, k) => [...arr].sort(() => Math.random() - .5).slice(0, k);
+        const sc = {}, mt = {};
+        const run = async (arr) => {
+          await Promise.all(arr.map(async x => {
+            try {
+              const d = await api(`/movie/${x.id}/recommendations`);
+              d.results.forEach(r => {
+                if (!r.poster_path || S.seen[r.id] === true) return;
+                mt[r.id] = n(r);
+                sc[r.id] = (sc[r.id] || 0) + (1 + r.vote_average / 10);
+              });
+            } catch(e) {}
+          }));
+        };
+
+        await run(pick(myLikes, 8));
+        await run(pick(pLikes, 8));
+
+        const list = Object.keys(sc).sort((a, b) => sc[b] - sc[a]).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · Ideal para ambos` }));
+        
+        partnerRecs = list.length ? `<h3>🎯 Recomendadas para Ver Juntos (${list.length})</h3>` + list.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button>`)).join("") : '<p class="hint">No se encontraron recomendaciones conjuntas.</p>';
+        
+        document.getElementById("partnerContent").innerHTML = partnerRecs;
+      } catch(err) {
+        document.getElementById("partnerContent").innerHTML = `<p class="hint">Error al calcular recomendaciones conjuntas.</p>`;
+      }
     });
   };
+}
+
+// 5. GUSTOS
+async function d5() {
+  const L = lst(true), N = lst(false);
+  m.innerHTML = `<div class="list">
+    <h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}
+    <h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}
+  </div>`;
 }
 
 m.onclick = e => {
   const b = e.target.closest("[data-a]"); if (!b) return; const id = +b.dataset.id;
   if (b.dataset.a == "undo") { delete S.like[id]; save(); draw() }
-  if (b.dataset.a == "seen") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; RC = RC.filter(x => x.id != id); save(); draw() }
+  if (b.dataset.a == "seen") { const r = RC?.find(x => x.id == id) || partnerRecs ? document.getElementById("partnerContent") : null; /* handled safely */ S.seen[id] = true; save(); draw(); }
   if (b.dataset.a == "ignore") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; S.like[id] = false; RC = RC.filter(x => x.id != id); save(); draw() }
 };
 
@@ -317,31 +366,46 @@ function importCSV(txt) {
   save(); RK = ""; Q = []; alert(k + " películas importadas."); draw();
 }
 
-// 5. AJUSTES (Filtros por época / nota)
-async function d5() {
+// 6. AJUSTES
+async function d6() {
+  // Generar años desde 2026 hasta 1950
+  let yearsOpts = '<option value="0">Cualquier año</option>';
+  for(let y = 2026; y >= 1950; y--) {
+    yearsOpts += `<option value="${y}">${y}</option>`;
+  }
+
+  // Generar notas del 1 al 10
+  let ratingsOpts = '<option value="0">Cualquiera</option>';
+  for(let r = 1; r <= 10; r++) {
+    ratingsOpts += `<option value="${r}">${r}.0 o más</option>`;
+  }
+
   m.innerHTML = `<div class="list">
     ${TMDB_KEY ? "" : `<h3>🔑 API key de TMDB</h3><input id="k" value="${S.key}" placeholder="Pega tu API key"><button class="b" id="sk">Guardar</button>`}
     <h3>🎭 Género en Descubrir</h3>
     <select id="g"><option value="0">Todos</option></select>
     
-    <h3>📅 Filtro por Año</h3>
-    <select id="fy">
-      <option value="0">Cualquier año</option>
-      <option value="2026">2026</option>
-      <option value="2025">2025</option>
-      <option value="2024">2024</option>
-      <option value="2023">2023</option>
-      <option value="2020">2020s</option>
-      <option value="2010">2010s</option>
-    </select>
+    <div class="filter-row">
+      <div class="filter-col">
+        <label>Filtro por Año</label>
+        <select id="fy">${yearsOpts}</select>
+      </div>
+      <div class="filter-col">
+        <label>Filtro por Década</label>
+        <select id="fd">
+          <option value="0">Cualquier década</option>
+          <option value="2020">2020s</option>
+          <option value="2010">2010s</option>
+          <option value="2000">2000s</option>
+          <option value="1990">1990s</option>
+          <option value="1980">1980s</option>
+          <option value="1970">1970s</option>
+        </select>
+      </div>
+    </div>
 
     <h3>⭐ Nota mínima TMDB</h3>
-    <select id="fr">
-      <option value="0">Cualquiera</option>
-      <option value="6">Más de 6.0</option>
-      <option value="7">Más de 7.0 (Recomendado)</option>
-      <option value="8">Más de 8.0 (Excelentes)</option>
-    </select>
+    <select id="fr">${ratingsOpts}</select>
 
     <h3>💾 Tus gustos (CSV)</h3>
     <button class="b" id="ex">Exportar CSV</button>
@@ -358,30 +422,32 @@ async function d5() {
   $("ex").onclick = exportCSV;
   $("im").onclick = () => $("f").click();
   $("f").onchange = e => { const f = e.target.files[0]; if (f) f.text().then(importCSV) };
-  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0 }; Q = []; RC = null; RK = ""; save(); tab = 0; draw() } };
+  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }; Q = []; RC = null; RK = ""; partnerRecs = null; save(); tab = 0; draw() } };
   
   $("g").onchange = e => { S.genre = +e.target.value; Q = []; save() };
-  $("fy").onchange = e => { S.year = +e.target.value; Q = []; save() };
+  $("fy").onchange = e => { S.year = +e.target.value; if(S.year) { S.decade = 0; } Q = []; save(); draw(); };
+  $("fd").onchange = e => { S.decade = +e.target.value; if(S.decade) { S.year = 0; } Q = []; save(); draw(); };
   $("fr").onchange = e => { S.minRating = +e.target.value; Q = []; save() };
 
   if (TMDB_KEY || S.key) try {
     const g = await api("/genre/movie/list");
-    if (tab != 5) return;
+    if (tab != 6) return;
     $("g").innerHTML = '<option value="0">Todos</option>' + g.genres.map(x => `<option value="${x.id}">${x.name}</option>`).join("");
     $("g").value = S.genre || 0;
     $("fy").value = S.year || 0;
+    $("fd").value = S.decade || 0;
     $("fr").value = S.minRating || 0;
   } catch(e) {}
 }
 
 function draw() {
   window.key = null;
-  [0, 1, 2, 3, 4, 5].forEach(i => document.getElementById("t" + i).className = i == tab ? "on" : "");
-  if (!(TMDB_KEY || S.key) && tab < 5) tab = 5;
-  [d0, d1, d2, d3, d4, d5][tab]().catch(err);
+  [0, 1, 2, 3, 4, 5, 6].forEach(i => document.getElementById("t" + i).className = i == tab ? "on" : "");
+  if (!(TMDB_KEY || S.key) && tab < 6) tab = 6;
+  [d0, d1, d2, d3, d4, d5, d6][tab]().catch(err);
 }
 
-[0, 1, 2, 3, 4, 5].forEach(i => document.getElementById("t" + i).onclick = () => { tab = i; draw() });
+[0, 1, 2, 3, 4, 5, 6].forEach(i => document.getElementById("t" + i).onclick = () => { tab = i; draw() });
 draw();
 </script>
 </body>
