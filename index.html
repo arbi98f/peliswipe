@@ -10,15 +10,21 @@
     @media(prefers-color-scheme:dark){:root{--bg:#101015;--fg:#f1f1f6;--card:#1c1c25;--mut:#9a9aab}}
     *{box-sizing:border-box}html,body{margin:0;height:100%}
     body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
-    nav{display:flex;gap:4px;padding:8px 4px;justify-content:center;overflow-x:auto}
-    nav button{flex:1;max-width:105px;border:0;border-radius:20px;padding:8px 2px;background:var(--card);color:var(--fg);font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap}
+    
+    /* Navegación adaptativa en 2 filas para celulares */
+    nav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 6px;justify-content:center;background:var(--bg);border-bottom:1px solid #8882}
+    nav button{flex:1 1 calc(25% - 6px);min-width:75px;border:0;border-radius:12px;padding:10px 4px;background:var(--card);color:var(--fg);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 6px #0001;text-align:center}
     nav button.on{background:var(--ac);color:#fff}
+
     main{flex:1;display:flex;flex-direction:column;align-items:center;min-height:0;padding:0 14px 10px;position:relative}
     .hint{color:var(--mut);font-size:13px;margin:4px 0 8px;text-align:center}
     #deck{position:relative;flex:1;width:100%;max-width:380px;min-height:0}
     .card{position:absolute;inset:0;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;box-shadow:0 8px 24px #0004;touch-action:none;user-select:none;background:#333 center/cover;cursor:grab}
     .card:active{cursor:grabbing}
-    .card .play-hint{position:absolute;top:16px;right:16px;background:#0008;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;backdrop-filter:blur(4px)}
+    
+    /* Botón de tráiler ampliado para mayor comodidad táctil en móviles */
+    .card .play-hint{position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.7);border-radius:24px;padding:8px 14px;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer}
+    
     a{color:inherit}.credits{text-align:center;margin-top:18px}.credits svg{height:auto}
     kbd{background:var(--card);border:1px solid #8885;border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit}
     .btns button.sm{width:46px;height:46px;font-size:20px;align-self:center}
@@ -33,8 +39,9 @@
     .list{width:100%;max-width:520px;overflow-y:auto;flex:1;padding-bottom:20px}
     .list h3{margin:16px 0 6px}
     .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px;margin-bottom:8px}
-    .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884}
-    .row b{display:block;font-size:14px}.row small{color:var(--mut)}
+    .row img{width:46px;height:69px;object-fit:cover;border-radius:6px;background:#8884;cursor:pointer}
+    .row b{display:block;font-size:14px;cursor:pointer}
+    .row small{color:var(--mut)}
     .row-actions{margin-left:auto;display:flex;flex-direction:column;gap:4px}
     .row-actions button{border:0;background:none;font-size:12px;font-weight:600;cursor:pointer;padding:2px 4px;text-align:right}
     .row-actions button.btn-seen{color:var(--ac)}
@@ -58,10 +65,10 @@
 </head>
 <body>
 <nav>
-  <button id="t0">🎬 Descubrir</button>
-  <button id="t1">👀 Vistas</button>
-  <button id="t2">🎯 Para ti</button>
-  <button id="t3">🔍 Buscar</button>
+  <button id="t0">🔍 Buscar</button>
+  <button id="t1">🎬 Descubrir</button>
+  <button id="t2">👀 Vistas</button>
+  <button id="t3">🎯 Para ti</button>
   <button id="t4">🍿 Watch Party</button>
   <button id="t5">⭐ Gustos</button>
   <button id="t6">⚙️ Ajustes</button>
@@ -76,7 +83,7 @@
 <script>
 const TMDB_KEY = "a03437a40a9ecc20a282981d75fd07b1"; 
 const IMG = "https://image.tmdb.org/t/p/w500", IMG2 = "https://image.tmdb.org/t/p/w185";
-let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }, tab = 0, Q = [], fp = null, RC = null, RK = "", H = [], partnerData = null, partnerRecs = null;
+let S = { key: "", seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }, tab = 1, Q = [], fp = null, RC = null, RK = "", H = [], partnerData = null, partnerRecs = null;
 
 try { Object.assign(S, JSON.parse(localStorage.getItem("peliswipe2")) || {}) } catch(e) {}
 const save = () => { try { localStorage.setItem("peliswipe2", JSON.stringify(S)) } catch(e) {} };
@@ -117,9 +124,9 @@ const err = e => { m.innerHTML = `<div class="empty">No pude cargar TMDB (${e.me
 
 function cardHTML(x, top) {
   return `<div class="card${top ? "" : " back"}" style="background-image:url(${IMG}${x.p})">
-    ${top ? '<div class="play-hint" title="Ver Tráiler / Dónde ver">▶️</div>' : ''}
-    <div class="tag r">${tab ? "ME GUSTÓ" : "VISTA"}</div>
-    <div class="tag l">${tab ? "NO ME GUSTÓ" : "NO VISTA"}</div>
+    ${top ? '<div class="play-hint" data-action="trailer">▶️ Ver Tráiler</div>' : ''}
+    <div class="tag r">${tab == 1 ? "ME GUSTÓ" : "VISTA"}</div>
+    <div class="tag l">${tab == 1 ? "NO ME GUSTÓ" : "NO VISTA"}</div>
     <div class="info"><h2>${x.t}</h2><p>${x.y} · ⭐ ${x.r ? x.r.toFixed(1) : "N/A"}</p></div>
   </div>`;
 }
@@ -130,15 +137,15 @@ function closeModal() {
   mc.innerHTML = "";
 }
 
-async function openDetails(item) {
+async function openDetails(movieId, movieTitle, movieYear) {
   const mb = document.getElementById("modalBg"), mc = document.getElementById("modalContent");
   mc.innerHTML = `<p class="hint">Cargando tráiler y plataformas...</p>`;
   mb.classList.add("on");
   
   try {
     const [videos, providers] = await Promise.all([
-      api(`/movie/${item.id}/videos`),
-      api(`/movie/${item.id}/watch/providers`)
+      api(`/movie/${movieId}/videos`),
+      api(`/movie/${movieId}/watch/providers`)
     ]);
     
     const trailer = videos.results.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) || videos.results[0];
@@ -147,7 +154,7 @@ async function openDetails(item) {
 
     mc.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <h2 style="margin:0">${item.t} <small>(${item.y})</small></h2>
+        <h2 style="margin:0">${movieTitle} <small>(${movieYear})</small></h2>
         <button id="closeModal" style="border:0;background:none;font-size:20px;cursor:pointer">✖️</button>
       </div>
       ${trailer ? `<div class="video-container"><iframe src="https://www.youtube.com/embed/${trailer.key}" allow="autoplay" allowfullscreen></iframe></div>` : '<p class="hint">Sin tráiler disponible</p>'}
@@ -175,63 +182,34 @@ function deck(list, onAns, txtL, txtR, empty) {
   const set = v => { dx = v; c.style.transform = `translateX(${v}px) rotate(${v / 18}deg)`; tr.style.opacity = Math.max(0, v / 100); tl.style.opacity = Math.max(0, -v / 100) };
   let done = false;
   const go = r => { if (done) return; done = true; c.style.transition = "transform .3s"; c.style.transform = `translateX(${r ? 600 : -600}px) rotate(${r ? 30 : -30}deg)`; setTimeout(() => onAns(list[0], r), 250) };
+  
   c.onpointerdown = e => { sx = e.clientX; moved = false; c.setPointerCapture(e.pointerId); c.style.transition = "none" };
   c.onpointermove = e => { if (sx !== null) { if (Math.abs(e.clientX - sx) > 5) moved = true; set(e.clientX - sx) } };
-  c.onpointerup = c.onpointercancel = () => { 
+  c.onpointerup = c.onpointercancel = e => { 
     if (sx === null) return; sx = null; 
-    if (!moved) { openDetails(list[0]); c.style.transition = "transform .2s"; set(0); return; }
+    if (!moved) { 
+      if (e.target.closest('[data-action="trailer"]') || !e.target.closest('.btns')) {
+        openDetails(list[0].id, list[0].t, list[0].y);
+      }
+      c.style.transition = "transform .2s"; set(0); return; 
+    }
     if (dx > 100) go(1); else if (dx < -100) go(0); else { c.style.transition = "transform .2s"; set(0) } 
   };
   document.getElementById("bu").onclick = undo; document.getElementById("br").onclick = () => go(1); document.getElementById("bl").onclick = () => go(0);
   window.key = e => { if (e.key == "ArrowRight") go(1); if (e.key == "ArrowLeft") go(0) };
 }
 
-const undo = () => { const h = H.pop(); if (!h) return; if (h.tab == 0) { delete S.seen[h.x.id]; delete S.m[h.x.id]; Q.unshift(h.x) } else delete S.like[h.x.id]; tab = h.tab; save(); draw() };
+const undo = () => { const h = H.pop(); if (!h) return; if (h.tab == 1) { delete S.seen[h.x.id]; delete S.m[h.x.id]; Q.unshift(h.x) } else delete S.like[h.x.id]; tab = h.tab; save(); draw() };
 
 document.addEventListener("keydown", e => {
   if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
-  if (k == "z" && tab < 2) { undo(); return }
+  if (k == "z" && tab == 1) { undo(); return }
   if (window.key) window.key({ key: k == "a" ? "ArrowLeft" : k == "d" ? "ArrowRight" : e.key })
 });
 
-// 0. DESCUBRIR
+// 0. BUSCADOR MANUAL
 async function d0() {
-  Q = Q.filter(x => !(x.id in S.seen));
-  if (Q.length < 3) { m.innerHTML = '<div class="empty">Cargando películas…</div>'; try { await fill() } catch(e) { return err(e) } }
-  else if (Q.length < 10) fill().catch(() => {});
-  if (tab != 0) return;
-  Q.slice(0, 4).forEach(x => { new Image().src = IMG + x.p });
-  deck(Q.slice(0, 2), (x, r) => { Q.shift(); ans(x, r); H.push({ tab: 0, x }); draw() }, "no la he visto", "la vi", "No hay películas con este filtro.");
-}
-
-// 1. VISTAS
-function d1() {
-  const l = Object.values(S.m).filter(x => S.seen[x.id] && !(x.id in S.like));
-  deck(l.slice(0, 2), (x, r) => { S.like[x.id] = !!r; H.push({ tab: 1, x }); save(); draw() }, "no me gustó", "me gustó", "No tienes películas vistas por calificar.");
-}
-
-const lst = v => Object.values(S.m).filter(x => S.like[x.id] === v);
-const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt=""><div><b>${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div><div class="row-actions">${ex}</div></div>`;
-
-// 2. RECOMENDACIONES (PARA TI)
-async function d2() {
-  const L = lst(true), N = lst(false), key = L.length + "/" + N.length;
-  m.innerHTML = `<div class="list"><h3>🎯 Recomendadas basadas en tus gustos</h3><div id="rc"><p class="hint">Calculando mejores recomendaciones...</p></div></div>`;
-  const el = document.getElementById("rc");
-  if (!L.length) { el.innerHTML = '<p class="hint">Califica películas en "Vistas" para recibir recomendaciones.</p>'; return }
-  if (RK != key) {
-    const pick = (a, k) => [...a].sort(() => Math.random() - .5).slice(0, k), sc = {}, mt = {};
-    const run = (arr, w) => Promise.all(arr.map(async x => { try { const d = await api(`/movie/${x.id}/recommendations`); d.results.forEach(r => { if (!r.poster_path || S.seen[r.id] === true) return; mt[r.id] = n(r); const c = sc[r.id] || (sc[r.id] = { s: 0, c: 0 }); c.s += w * (1 + r.vote_average / 10); if (w > 0) c.c++ }) } catch(e) {} }));
-    await run(pick(L, 10), 1); await run(pick(N, 5), -1.5);
-    RC = Object.keys(sc).filter(i => sc[i].s > 0).sort((a, b) => sc[b].s - sc[a].s).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · similar a ${sc[i].c} de tus favoritas` })); RK = key;
-  }
-  if (tab != 2) return;
-  el.innerHTML = RC.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button><button class="btn-ignore" data-a="ignore" data-id="${x.id}">No me interesa</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora.</p>';
-}
-
-// 3. BUSCADOR MANUAL
-async function d3() {
   m.innerHTML = `<div class="list">
     <input type="text" id="srch" placeholder="Escribe el título de una película...">
     <div id="srchRes"></div>
@@ -247,13 +225,73 @@ async function d3() {
         const d = await api("/search/movie", { query: q });
         res.innerHTML = d.results.slice(0, 15).map(n).map(x => row(x, `<button class="btn-seen" data-a="addSeen" data-id="${x.id}">Ya la vi</button><button class="btn-seen" data-a="addLike" data-id="${x.id}">💚 Me gustó</button>`)).join("");
         res.onclick = e => {
-          const b = e.target.closest("[data-a]"); if (!b) return;
-          const id = +b.dataset.id, item = d.results.map(n).find(i => i.id == id);
-          if (b.dataset.a == "addSeen") { S.m[id] = item; S.seen[id] = true; save(); alert(`"${item.t}" agregada a Vistas.`); }
-          if (b.dataset.a == "addLike") { S.m[id] = item; S.seen[id] = true; S.like[id] = true; save(); alert(`"${item.t}" agregada a Favoritas.`); }
+          const target = e.target;
+          const b = target.closest("[data-a]"); 
+          if (b) {
+            const id = +b.dataset.id, item = d.results.map(n).find(i => i.id == id);
+            if (b.dataset.a == "addSeen") { S.m[id] = item; S.seen[id] = true; save(); alert(`"${item.t}" agregada a Vistas.`); }
+            if (b.dataset.a == "addLike") { S.m[id] = item; S.seen[id] = true; S.like[id] = true; save(); alert(`"${item.t}" agregada a Favoritas.`); }
+            return;
+          }
+          const rowEl = target.closest(".row");
+          if (rowEl) {
+            const imgEl = rowEl.querySelector("img");
+            if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
+          }
         };
       } catch(e) {}
     }, 300);
+  };
+}
+
+// 1. DESCUBRIR
+async function d1() {
+  Q = Q.filter(x => !(x.id in S.seen));
+  if (Q.length < 3) { m.innerHTML = '<div class="empty">Cargando películas…</div>'; try { await fill() } catch(e) { return err(e) } }
+  else if (Q.length < 10) fill().catch(() => {});
+  if (tab != 1) return;
+  Q.slice(0, 4).forEach(x => { new Image().src = IMG + x.p });
+  deck(Q.slice(0, 2), (x, r) => { Q.shift(); ans(x, r); H.push({ tab: 1, x }); draw() }, "no la he visto", "la vi", "No hay películas con este filtro.");
+}
+
+// 2. VISTAS
+function d2() {
+  const l = Object.values(S.m).filter(x => S.seen[x.id] && !(x.id in S.like));
+  deck(l.slice(0, 2), (x, r) => { S.like[x.id] = !!r; H.push({ tab: 2, x }); save(); draw() }, "no me gustó", "me gustó", "No tienes películas vistas por calificar.");
+}
+
+const lst = v => Object.values(S.m).filter(x => S.like[x.id] === v);
+const row = (x, ex) => `<div class="row"><img loading="lazy" src="${x.p ? IMG2 + x.p : ""}" alt="" data-id="${x.id}" data-title="${x.t}" data-year="${x.y}"><div><b data-id="${x.id}" data-title="${x.t}" data-year="${x.y}">${x.t}</b><small>${x.y}${x.sub ? " · " + x.sub : ""}</small></div><div class="row-actions">${ex}</div></div>`;
+
+// 3. RECOMENDACIONES (PARA TI)
+async function d3() {
+  const L = lst(true), N = lst(false), key = L.length + "/" + N.length;
+  m.innerHTML = `<div class="list"><h3>🎯 Recomendadas basadas en tus gustos</h3><div id="rc"><p class="hint">Calculando mejores recomendaciones...</p></div></div>`;
+  const el = document.getElementById("rc");
+  if (!L.length) { el.innerHTML = '<p class="hint">Califica películas en "Vistas" para recibir recomendaciones.</p>'; return }
+  if (RK != key) {
+    const pick = (a, k) => [...a].sort(() => Math.random() - .5).slice(0, k), sc = {}, mt = {};
+    const run = (arr, w) => Promise.all(arr.map(async x => { try { const d = await api(`/movie/${x.id}/recommendations`); d.results.forEach(r => { if (!r.poster_path || S.seen[r.id] === true) return; mt[r.id] = n(r); const c = sc[r.id] || (sc[r.id] = { s: 0, c: 0 }); c.s += w * (1 + r.vote_average / 10); if (w > 0) c.c++ }) } catch(e) {} }));
+    await run(pick(L, 10), 1); await run(pick(N, 5), -1.5);
+    RC = Object.keys(sc).filter(i => sc[i].s > 0).sort((a, b) => sc[b].s - sc[a].s).slice(0, 25).map(i => ({ ...mt[i], sub: `⭐ ${mt[i].r.toFixed(1)} · similar a ${sc[i].c} de tus favoritas` })); RK = key;
+  }
+  if (tab != 3) return;
+  el.innerHTML = RC.map(x => row(x, `<button class="btn-seen" data-a="seen" data-id="${x.id}">Ya la vi</button><button class="btn-ignore" data-a="ignore" data-id="${x.id}">No me interesa</button>`)).join("") || '<p class="hint">Sin más recomendaciones por ahora.</p>';
+  
+  el.onclick = e => {
+    const target = e.target;
+    const b = target.closest("[data-a]");
+    if (b) {
+      const id = +b.dataset.id;
+      if (b.dataset.a == "seen") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; RC = RC.filter(x => x.id != id); save(); draw(); }
+      if (b.dataset.a == "ignore") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; S.like[id] = false; RC = RC.filter(x => x.id != id); save(); draw(); }
+      return;
+    }
+    const rowEl = target.closest(".row");
+    if (rowEl) {
+      const imgEl = rowEl.querySelector("img");
+      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
+    }
   };
 }
 
@@ -317,6 +355,23 @@ async function d4() {
       }
     });
   };
+
+  document.getElementById("partnerContent").onclick = e => {
+    const target = e.target;
+    const b = target.closest("[data-a]");
+    if (b && b.dataset.a == "seen") {
+      const id = +b.dataset.id;
+      S.seen[id] = true;
+      save();
+      b.closest(".row").remove();
+      return;
+    }
+    const rowEl = target.closest(".row");
+    if (rowEl) {
+      const imgEl = rowEl.querySelector("img");
+      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
+    }
+  };
 }
 
 // 5. GUSTOS
@@ -326,14 +381,21 @@ async function d5() {
     <h3>💚 Me gustaron (${L.length})</h3>${L.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada en favoritas</p>'}
     <h3>✖️ No me gustaron (${N.length})</h3>${N.map(x => row(x, `<button class="btn-seen" data-a="undo" data-id="${x.id}">↩ Quitar</button>`)).join("") || '<p class="hint">Aún nada por aquí</p>'}
   </div>`;
-}
 
-m.onclick = e => {
-  const b = e.target.closest("[data-a]"); if (!b) return; const id = +b.dataset.id;
-  if (b.dataset.a == "undo") { delete S.like[id]; save(); draw() }
-  if (b.dataset.a == "seen") { const r = RC?.find(x => x.id == id) || partnerRecs ? document.getElementById("partnerContent") : null; /* handled safely */ S.seen[id] = true; save(); draw(); }
-  if (b.dataset.a == "ignore") { const r = RC.find(x => x.id == id); S.m[id] = { id, t: r.t, y: r.y, p: r.p }; S.seen[id] = true; S.like[id] = false; RC = RC.filter(x => x.id != id); save(); draw() }
-};
+  m.querySelector(".list").onclick = e => {
+    const target = e.target;
+    const b = target.closest("[data-a]");
+    if (b && b.dataset.a == "undo") {
+      delete S.like[+b.dataset.id]; save(); draw();
+      return;
+    }
+    const rowEl = target.closest(".row");
+    if (rowEl) {
+      const imgEl = rowEl.querySelector("img");
+      if (imgEl) openDetails(imgEl.dataset.id, imgEl.dataset.title, imgEl.dataset.year);
+    }
+  };
+}
 
 // --- CSV ---
 const esc = v => '"' + String(v ?? "").replace(/"/g, '""') + '"';
@@ -368,13 +430,11 @@ function importCSV(txt) {
 
 // 6. AJUSTES
 async function d6() {
-  // Generar años desde 2026 hasta 1950
   let yearsOpts = '<option value="0">Cualquier año</option>';
   for(let y = 2026; y >= 1950; y--) {
     yearsOpts += `<option value="${y}">${y}</option>`;
   }
 
-  // Generar notas del 1 al 10
   let ratingsOpts = '<option value="0">Cualquiera</option>';
   for(let r = 1; r <= 10; r++) {
     ratingsOpts += `<option value="${r}">${r}.0 o más</option>`;
@@ -417,12 +477,12 @@ async function d6() {
   </div>`;
 
   const $ = i => document.getElementById(i);
-  if (!TMDB_KEY) $("sk").onclick = () => { S.key = $("k").value.trim(); Q = []; RC = null; RK = ""; save(); tab = 0; draw() };
+  if (!TMDB_KEY) $("sk").onclick = () => { S.key = $("k").value.trim(); Q = []; RC = null; RK = ""; save(); tab = 1; draw() };
   
   $("ex").onclick = exportCSV;
   $("im").onclick = () => $("f").click();
   $("f").onchange = e => { const f = e.target.files[0]; if (f) f.text().then(importCSV) };
-  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }; Q = []; RC = null; RK = ""; partnerRecs = null; save(); tab = 0; draw() } };
+  $("rs").onclick = () => { if (confirm("¿Borrar todos tus gustos?")) { S = { key: S.key, seen: {}, like: {}, m: {}, pg: {}, genre: 0, year: 0, decade: 0, minRating: 0 }; Q = []; RC = null; partnerRecs = null; save(); tab = 1; draw() } };
   
   $("g").onchange = e => { S.genre = +e.target.value; Q = []; save() };
   $("fy").onchange = e => { S.year = +e.target.value; if(S.year) { S.decade = 0; } Q = []; save(); draw(); };
