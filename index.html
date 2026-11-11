@@ -76,7 +76,7 @@ const m = document.getElementById("m");
 // ---------- i18n ----------
 const L = {
  es: { nav: ["🔍 Buscar", "🎬 Descubrir", "👀 Vistas", "🎯 Para ti", "🍿 Watch Party", "⭐ Gustos", "⚙️ Ajustes"],
-  discard: "❌ Descartar", seenB: "✓ Ya la vi", like: "👍 Me gustó", dislike: "👎 No me gustó", undo: "Deshacer",
+  discard: "❌ Descartar", seenB: "✅ Ya la vi", like: "👍 Me gustó", dislike: "👎 No me gustó", undo: "Deshacer",
   tapTrailer: "Toca tarjeta para Tráiler", swipe: "Desliza", emptyDisc: "No hay películas con este filtro.", emptySeen: "No tienes películas vistas por calificar.",
   loading: "Cargando películas…", apiErr: "No pude cargar TMDB", apiFix: "Revisa tu API key en ⚙️ Ajustes.",
   ph: "Escribe el título de una película...", alreadySeen: "Ya la vi", added: "agregada a Vistas.", addedFav: "agregada a Favoritas.",
@@ -89,12 +89,12 @@ const L = {
   liked: "👍 Me gustaron", disliked: "👎 No me gustaron", none1: "Aún nada en favoritas", none2: "Aún nada por aquí", remove: "↩ Quitar",
   genreH: "🎭 Género en Descubrir", all: "Todos", fy: "Filtro por Año", fd: "Filtro por Década", anyY: "Cualquier año", anyD: "Cualquier década", minR: "⭐ Nota mínima TMDB", any: "Cualquiera", orMore: "o más",
   csv: "💾 Tus gustos (CSV)", exp: "Exportar CSV", imp: "Importar CSV", data: "🗑️ Datos", reset: "Reiniciar todo", resetQ: "¿Borrar todos tus gustos?", imported: "películas importadas.",
-  lang: "🌐 Idioma", theme: "🌓 Tema", light: "☀️ Claro", dark: "🌙 Oscuro (negro 100%)",
+  lang: "🌐 Idioma", theme: "🌓 Tema", light: "☀️ Claro", dark: "🌙 Oscuro",
   stats: "📊 Estadísticas", sSeen: "Películas vistas", sLiked: "Me gustaron", sTime: "Tiempo total estimado", sGenre: "Género más visto", sNA: "N/A", sNote: "Tiempo estimado a 110 min por película.",
   ach: "🏆 Logros", trailerLoad: "Cargando tráiler y plataformas...", noTrailer: "Sin tráiler disponible", stream: "📺 Disponible en streaming:", noStream: "No disponible en suscripción de streaming en tu región.", dErr: "Error al cargar datos",
-  trailerBtn: "▶️ Ver Tráiler", tagSeen: "✓ YA LA VI", tagDisc: "❌ DESCARTAR", tagLike: "👍 ME GUSTÓ", tagDis: "👎 NO ME GUSTÓ", unlocked: "¡Logro desbloqueado!", apiKeyH: "🔑 API key de TMDB", save: "Guardar", pasteKey: "Pega tu API key", roul: "Ruleta rápida", h: "h" },
+  trailerBtn: "▶️ Ver Tráiler", tagSeen: "✅ YA LA VI", tagDisc: "❌ DESCARTAR", tagLike: "👍 ME GUSTÓ", tagDis: "👎 NO ME GUSTÓ", unlocked: "¡Logro desbloqueado!", apiKeyH: "🔑 API key de TMDB", save: "Guardar", pasteKey: "Pega tu API key", roul: "Ruleta rápida", h: "h" },
  en: { nav: ["🔍 Search", "🎬 Discover", "👀 Seen", "🎯 For you", "🍿 Watch Party", "⭐ Tastes", "⚙️ Settings"],
-  discard: "❌ Discard", seenB: "✓ Seen it", like: "👍 Liked", dislike: "👎 Disliked", undo: "Undo",
+  discard: "❌ Discard", seenB: "✅ Seen it", like: "👍 Liked", dislike: "👎 Disliked", undo: "Undo",
   tapTrailer: "Tap card for Trailer", swipe: "Swipe", emptyDisc: "No movies with this filter.", emptySeen: "No seen movies left to rate.",
   loading: "Loading movies…", apiErr: "Couldn't load TMDB", apiFix: "Check your API key in ⚙️ Settings.",
   ph: "Type a movie title...", alreadySeen: "Seen it", added: "added to Seen.", addedFav: "added to Favorites.",
@@ -107,10 +107,10 @@ const L = {
   liked: "👍 Liked", disliked: "👎 Disliked", none1: "Nothing in favorites yet", none2: "Nothing here yet", remove: "↩ Remove",
   genreH: "🎭 Genre in Discover", all: "All", fy: "Year filter", fd: "Decade filter", anyY: "Any year", anyD: "Any decade", minR: "⭐ Minimum TMDB rating", any: "Any", orMore: "or more",
   csv: "💾 Your tastes (CSV)", exp: "Export CSV", imp: "Import CSV", data: "🗑️ Data", reset: "Reset everything", resetQ: "Delete all your tastes?", imported: "movies imported.",
-  lang: "🌐 Language", theme: "🌓 Theme", light: "☀️ Light", dark: "🌙 Dark (100% black)",
+  lang: "🌐 Language", theme: "🌓 Theme", light: "☀️ Light", dark: "🌙 Dark",
   stats: "📊 Statistics", sSeen: "Movies seen", sLiked: "Liked", sTime: "Estimated total time", sGenre: "Most watched genre", sNA: "N/A", sNote: "Time estimated at 110 min per movie.",
   ach: "🏆 Achievements", trailerLoad: "Loading trailer and providers...", noTrailer: "No trailer available", stream: "📺 Available on streaming:", noStream: "Not available on subscription streaming in your region.", dErr: "Error loading data",
-  trailerBtn: "▶️ Watch Trailer", tagSeen: "✓ SEEN IT", tagDisc: "❌ DISCARD", tagLike: "👍 LIKED", tagDis: "👎 DISLIKED", unlocked: "Achievement unlocked!", apiKeyH: "🔑 TMDB API key", save: "Save", pasteKey: "Paste your API key", roul: "Quick roulette", h: "h" }
+  trailerBtn: "▶️ Watch Trailer", tagSeen: "✅ SEEN IT", tagDisc: "❌ DISCARD", tagLike: "👍 LIKED", tagDis: "👎 DISLIKED", unlocked: "Achievement unlocked!", apiKeyH: "🔑 TMDB API key", save: "Save", pasteKey: "Paste your API key", roul: "Quick roulette", h: "h" }
 };
 const T = k => (L[S.lang] || L.es)[k] ?? k;
 const loc = () => S.lang == "en" ? "en-US" : "es-ES";
@@ -129,7 +129,7 @@ const ACH = [
   { id: "rater", ic: "📝", es: ["Crítico", "Califica 20 películas"], en: ["Critic", "Rate 20 movies"], ok: c => c.rated >= 20 },
   { id: "marathon", ic: "🏃", es: ["Maratónico", "Marca 50 películas como vistas"], en: ["Marathoner", "Mark 50 movies as seen"], ok: c => c.seen >= 50 },
   { id: "cinephile", ic: "🎞️", es: ["Cinéfilo", "Marca 100 películas como vistas"], en: ["Cinephile", "Mark 100 movies as seen"], ok: c => c.seen >= 100 },
-  { id: "oled", ic: "🌑", es: ["Cinéfilo OLED", "Activa el tema oscuro 100% negro"], en: ["OLED Cinephile", "Enable the 100% black theme"], ok: () => false },
+  { id: "oled", ic: "🌑", es: ["El Caballero de la Noche", "Activa el modo oscuro"], en: ["The Dark Knight", "Enable dark mode"], ok: () => false },
   { id: "roulette", ic: "🎲", es: ["Jugador", "Usa la ruleta rápida"], en: ["Gambler", "Use the quick roulette"], ok: () => false },
   { id: "party", ic: "🍿", es: ["Alma de la fiesta", "Compara gustos en Watch Party"], en: ["Party Soul", "Compare tastes in Watch Party"], ok: () => false }
 ];
