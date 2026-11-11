@@ -85,10 +85,10 @@
     <!-- TAB 1: DESCUBRIR -->
     <div id="tab-discover" class="tab-content active">
       <div id="movie-card" class="card">
-        <img id="card-img" src="https://via.placeholder.com/500x750?text=Cargando+Poster..." alt="Poster">
+        <img id="card-img" src="" alt="Poster">
         <div class="card-info">
-          <div id="card-title" class="card-title">Ingresa tu API Key en Ajustes</div>
-          <p id="card-overview" class="card-overview">Si es la primera vez que entras, ve a la pestaña de Ajustes y guarda tu TMDB API Key para empezar a cargar películas.</p>
+          <div id="card-title" class="card-title">Cargando película...</div>
+          <p id="card-overview" class="card-overview"></p>
         </div>
       </div>
       <div class="actions">
@@ -108,12 +108,6 @@
 
     <!-- TAB 3: AJUSTES & METRICAS -->
     <div id="tab-settings" class="tab-content">
-      <div class="section-box">
-        <span class="section-title">API Key (TMDB)</span>
-        <input type="text" id="api-key-input" placeholder="Tu TMDB API Key">
-        <button class="btn" style="background:var(--accent-color); color:white;" onclick="saveApiKey()">Guardar Key</button>
-      </div>
-
       <div class="section-box">
         <span class="section-title" data-i18n="theme">Tema de pantalla</span>
         <select id="theme-select" onchange="changeTheme(this.value)">
@@ -155,6 +149,8 @@
   </nav>
 
   <script>
+    const DEFAULT_API_KEY = "d99b2ec020b69b6113b28b78996b7cdb"; // Tu API Key fija y lista
+
     const i18n = {
       'es-ES': {
         skip: "Descartar", seen: "Ya la vi", roulette: "Ruleta Rápida",
@@ -173,7 +169,7 @@
     };
 
     let state = {
-      apiKey: localStorage.getItem('tmdb_key') || '',
+      apiKey: DEFAULT_API_KEY,
       lang: localStorage.getItem('app_lang') || 'es-ES',
       theme: localStorage.getItem('app_theme') || 'dark',
       seenMovies: JSON.parse(localStorage.getItem('seen_movies') || '{}'),
@@ -187,10 +183,7 @@
       applyLanguage(state.lang);
       updateStats();
       checkBadges();
-      if(state.apiKey) {
-        document.getElementById('api-key-input').value = state.apiKey;
-        fetchMovies();
-      }
+      fetchMovies();
     });
 
     function switchTab(tabId, btn) {
@@ -217,7 +210,7 @@
       state.lang = val;
       localStorage.setItem('app_lang', val);
       applyLanguage(val);
-      if(state.apiKey) fetchMovies();
+      fetchMovies();
     }
 
     function applyLanguage(lang) {
@@ -228,18 +221,7 @@
       });
     }
 
-    function saveApiKey() {
-      const val = document.getElementById('api-key-input').value.trim();
-      if(val) {
-        state.apiKey = val;
-        localStorage.setItem('tmdb_key', val);
-        alert('API Key guardada con éxito.');
-        fetchMovies();
-      }
-    }
-
     async function fetchMovies() {
-      if(!state.apiKey) return;
       const url = `https://api.themoviedb.org/3/movie/popular?api_key=${state.apiKey}&language=${state.lang}&page=${state.page}`;
       try {
         const res = await fetch(url);
@@ -248,9 +230,6 @@
           state.currentMovies = data.results;
           state.currentIndex = 0;
           renderCard();
-        } else {
-          document.getElementById('card-title').textContent = "Error de API Key";
-          document.getElementById('card-overview').textContent = "Revisa que tu TMDB API Key ingresada en Ajustes sea válida.";
         }
       } catch(e) { 
         console.error(e); 
